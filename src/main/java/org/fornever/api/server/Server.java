@@ -9,19 +9,19 @@ import com.google.inject.Inject;
 public class Server {
 
 	@Inject
-	private HelloService testService;
+	private HelloService helloService;
 
 	public HelloService getTestService() {
-		return testService;
+		return helloService;
 	}
 
 	public void setTestService(HelloService testService) {
-		this.testService = testService;
+		this.helloService = testService;
 	}
 
 	public Server() {
 		port(Integer.parseInt(System.getProperty("api.server.port")));
-		get("/hello", (req, res) -> testService.getHello());
+		get("/hello", (req, res) -> helloService.getHello());
 	}
 	
 }

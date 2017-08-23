@@ -21,7 +21,6 @@ import com.google.inject.Injector;
  */
 public class Entry {
 
-	private final static String PROPERTIES_FILE = "application.properties";
 	private static Logger logger = LoggerFactory.getLogger(Entry.class);
 
 	/**
@@ -29,39 +28,11 @@ public class Entry {
 	 * 
 	 * @param args
 	 */
-	public static void main(String[] args) {
-		loadProperties();
-		Injector injector = Guice.createInjector(new GuiceBindings()); // create injector context
-		injector.getInstance(Server.class); // start Server
-	}
-
-	/**
-	 * load configuration properties from properties file
-	 */
-	private static void loadProperties() {
-		try {
-			// load application.properties from src/main/resources
-			InputStream iStream = Entry.class.getClassLoader().getResourceAsStream(PROPERTIES_FILE);
-			if (iStream == null) {
-				logger.warn("missing {} file from src", PROPERTIES_FILE);
-			} else {
-				System.getProperties().load(iStream);
-			}
-		} catch (IOException e) {
-			logger.error(e.getMessage());
-		}
-		try {
-			File file = new File(PROPERTIES_FILE);
-			if (file.exists()) {
-				// load application.properties from application path
-				InputStream iStream = new FileInputStream(PROPERTIES_FILE);
-				System.getProperties().load(iStream);
-			} else {
-				logger.info("missing user configuration file");
-			}
-		} catch (IOException e) {
-			logger.error(e.getMessage());
-		}
+	public static void main(String... args) {
+		// create injector context
+		Injector injector = Guice.createInjector(new GuiceBindings());
+		// start Server
+		injector.getInstance(Server.class); 
 	}
 
 }

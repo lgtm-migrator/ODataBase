@@ -2,6 +2,6 @@ target
 .settings
 .idea
 *.class
-application.properties
 .classpath
 .project
+/application.properties
