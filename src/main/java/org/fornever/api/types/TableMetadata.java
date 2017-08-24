@@ -7,6 +7,9 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.fornever.api.types.JDBCHelper.IIntergerRow;
+import org.fornever.api.types.JDBCHelper.IStringRow;
+
 public class TableMetadata {
 
 	private List<ColumnMetadata> columns;
@@ -16,6 +19,23 @@ public class TableMetadata {
 	private String tableSchema;
 	private String tableName;
 	private String tableType;
+	private String primaryKey;
+
+	/**
+	 * @return the primaryKey
+	 */
+	public String getPrimaryKey() {
+		return primaryKey;
+	}
+
+	/**
+	 * @param primaryKey
+	 *            the primaryKey to set
+	 */
+	public void setPrimaryKey(String primaryKey) {
+		this.primaryKey = primaryKey;
+	}
+
 	private String remarks;
 
 	private String typeCatalog;
@@ -99,6 +119,17 @@ public class TableMetadata {
 		return true;
 	}
 
+	public ColumnMetadata getColumn(String columnName) {
+		ColumnMetadata rt = null;
+		for (ColumnMetadata cMeta : getColumns()) {
+			if (cMeta.getColumnName().equalsIgnoreCase(columnName)) {
+				rt = cMeta;
+				break;
+			}
+		}
+		return rt;
+	}
+
 	public List<ColumnMetadata> getColumns() {
 		return columns;
 	}
@@ -121,6 +152,10 @@ public class TableMetadata {
 
 	public String getTableName() {
 		return tableName;
+	}
+
+	public String getEntitySetName() {
+		return tableName + "s";
 	}
 
 	public String getTableSchema() {
@@ -163,10 +198,36 @@ public class TableMetadata {
 
 	public void loadMetadata(Connection connection) throws SQLException {
 		if (this.tableName != null && !this.tableName.isEmpty()) {
+			this.columns = new ArrayList<>();
 			DatabaseMetaData metaData = connection.getMetaData();
 			ResultSet rs = metaData.getColumns(getTableCatalog(), getTableSchema(), getTableName(), null);
+			IStringRow stringRow = JDBCHelper.mustGetString.apply(rs);
+			IIntergerRow intergerRow = JDBCHelper.mustGetInteger.apply(rs);
 			while (rs.next()) {
-
+				ColumnMetadata columnMetadata = new ColumnMetadata();
+				columnMetadata.setCharOcetLength(intergerRow.Get("CHAR_OCTET_LENGTH"));
+				columnMetadata.setColumnName(stringRow.Get("COLUMN_NAME"));
+				columnMetadata.setColumnSize(intergerRow.Get("COLUMN_SIZE"));
+				columnMetadata.setDataType(intergerRow.Get("DATA_TYPE"));
+				columnMetadata.setDecimalDigits(intergerRow.Get("DECIMAL_DIGITS"));
+				columnMetadata.setDefaultValue(stringRow.Get("COLUMN_DEF"));
+				columnMetadata.setIsGenrationColumn(stringRow.Get("IS_GENERATEDCOLUMN"));
+				columnMetadata.setIsNullable(stringRow.Get("IS_NULLABLE"));
+				columnMetadata.setNullable(intergerRow.Get("NULLABLE"));
+				columnMetadata.setNumPrexRadix(intergerRow.Get("NUM_PREC_RADIX"));
+				columnMetadata.setOridinalPosition(intergerRow.Get("ORDINAL_POSITION"));
+				columnMetadata.setRemarks(stringRow.Get("REMARKS"));
+				columnMetadata.setTableCatalog(stringRow.Get("TABLE_CAT"));
+				columnMetadata.setTableName(stringRow.Get("TABLE_NAME"));
+				columnMetadata.setTableSchema(stringRow.Get("TABLE_SCHEM"));
+				columnMetadata.setTypeName(stringRow.Get("TYPE_NAME"));
+				this.columns.add(columnMetadata);
+			}
+			rs.close();
+			ResultSet rs2 = metaData.getPrimaryKeys(getTableCatalog(), getTableSchema(), getTableName());
+			while (rs2.next()) {
+				stringRow = JDBCHelper.mustGetString.apply(rs2);
+				setPrimaryKey(stringRow.Get("COLUMN_NAME"));
 			}
 		}
 	}
@@ -218,9 +279,18 @@ public class TableMetadata {
 	 */
 	@Override
 	public String toString() {
-		return "TableMetadata [columns=" + columns + ", tableCatalog=" + tableCatalog + ", tableSchema=" + tableSchema
-				+ ", tableName=" + tableName + ", tableType=" + tableType + ", remarks=" + remarks + ", typeCatalog="
-				+ typeCatalog + ", typeSchema=" + typeSchema + ", typeName=" + typeName + ", selfReferencingColName="
-				+ selfReferencingColName + ", refGeneration=" + refGeneration + "]";
+		return "TableMetadata [" + (columns != null ? "columns=" + columns + ", " : "")
+				+ (tableCatalog != null ? "tableCatalog=" + tableCatalog + ", " : "")
+				+ (tableSchema != null ? "tableSchema=" + tableSchema + ", " : "")
+				+ (tableName != null ? "tableName=" + tableName + ", " : "")
+				+ (tableType != null ? "tableType=" + tableType + ", " : "")
+				+ (primaryKey != null ? "primaryKey=" + primaryKey + ", " : "")
+				+ (remarks != null ? "remarks=" + remarks + ", " : "")
+				+ (typeCatalog != null ? "typeCatalog=" + typeCatalog + ", " : "")
+				+ (typeSchema != null ? "typeSchema=" + typeSchema + ", " : "")
+				+ (typeName != null ? "typeName=" + typeName + ", " : "")
+				+ (selfReferencingColName != null ? "selfReferencingColName=" + selfReferencingColName + ", " : "")
+				+ (refGeneration != null ? "refGeneration=" + refGeneration : "") + "]";
 	}
+
 }
