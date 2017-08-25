@@ -30,7 +30,7 @@ import org.apache.olingo.server.api.serializer.SerializerResult;
 import org.apache.olingo.server.api.uri.UriInfo;
 import org.apache.olingo.server.api.uri.UriResource;
 import org.apache.olingo.server.api.uri.UriResourceEntitySet;
-import org.fornever.api.types.JDBCHelper;
+import org.fornever.api.types.MySQLJDBCHelper;
 import org.fornever.api.types.SchemaMetadata;
 import org.fornever.api.types.TableMetadata;
 
@@ -40,7 +40,7 @@ import com.google.inject.Inject;
  * @author Theo Sun
  *
  */
-public class MysqlEntityCollectionProcessor implements EntityCollectionProcessor {
+public class MySQLEntityCollectionProcessor implements EntityCollectionProcessor {
 
 	@Inject
 	private OData odata;
@@ -56,6 +56,19 @@ public class MysqlEntityCollectionProcessor implements EntityCollectionProcessor
 
 	@Inject
 	private DataSource dataSource;
+	
+	@Inject 
+	private MySQLJDBCHelper jdbcHelper;
+
+	private EntityCollection getData(EdmEntitySet edmEntitySet) {
+		EntityCollection rt = new EntityCollection();
+		List<Entity> entities = rt.getEntities();
+		TableMetadata tableMetadata = this.schemaMetadata.getTableByEntitySetName(edmEntitySet.getName());
+		if (tableMetadata != null) {
+			entities.addAll(jdbcHelper.retriveEntities(tableMetadata));
+		}
+		return rt;
+	}
 
 	/*
 	 * (non-Javadoc)
@@ -102,16 +115,6 @@ public class MysqlEntityCollectionProcessor implements EntityCollectionProcessor
 		response.setStatusCode(HttpStatusCode.OK.getStatusCode());
 		response.setHeader(HttpHeader.CONTENT_TYPE, responseFormat.toContentTypeString());
 
-	}
-
-	private EntityCollection getData(EdmEntitySet edmEntitySet) {
-		EntityCollection rt = new EntityCollection();
-		List<Entity> entities = rt.getEntities();
-		TableMetadata tableMetadata = this.schemaMetadata.getTableByEntitySetName(edmEntitySet.getName());
-		if (tableMetadata != null) {
-			entities.addAll(JDBCHelper.retriveEntityByTableMetadata(tableMetadata, dataSource));
-		}
-		return rt;
 	}
 
 }

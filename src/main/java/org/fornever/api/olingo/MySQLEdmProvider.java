@@ -1,6 +1,5 @@
 package org.fornever.api.olingo;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -8,6 +7,7 @@ import java.util.List;
 
 import javax.sql.DataSource;
 
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.apache.olingo.commons.api.edm.provider.CsdlAbstractEdmProvider;
 import org.apache.olingo.commons.api.edm.provider.CsdlAction;
@@ -150,10 +150,14 @@ public class MySQLEdmProvider extends CsdlAbstractEdmProvider {
 			List<CsdlProperty> properties = new ArrayList<>();
 
 			for (ColumnMetadata columnMetadata : tableMetadata.getColumns()) {
+				FullQualifiedName type = TypeConventer.convertEdmTypeFrom(columnMetadata.getTypeName());
 				CsdlProperty colProp = new CsdlProperty();
 				colProp.setName(columnMetadata.getColumnName());
-				colProp.setType(TypeConventer.convertEdmTypeFrom(columnMetadata.getTypeName()));
-				if (columnMetadata.getColumnSize() != 0) {
+				colProp.setType(type);
+				if (type.equals(EdmPrimitiveTypeKind.Decimal.getFullQualifiedName())) {
+					colProp.setScale(columnMetadata.getDecimalDigits());
+				}
+				if (columnMetadata.getColumnSize() > 0) {
 					colProp.setMaxLength(columnMetadata.getColumnSize());
 				}
 				colProp.setNullable(columnMetadata.getNullable() != 0);

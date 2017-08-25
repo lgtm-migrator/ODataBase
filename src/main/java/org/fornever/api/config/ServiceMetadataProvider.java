@@ -11,7 +11,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 
 public class ServiceMetadataProvider implements Provider<ServiceMetadata> {
-	
+
 	@Inject
 	private CsdlEdmProvider provider;
 

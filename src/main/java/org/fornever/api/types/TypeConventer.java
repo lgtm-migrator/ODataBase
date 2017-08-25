@@ -1,5 +1,9 @@
 package org.fornever.api.types;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.function.Function;
+
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
@@ -8,6 +12,32 @@ import org.slf4j.LoggerFactory;
 public class TypeConventer {
 
 	private static Logger logger = LoggerFactory.getLogger(TypeConventer.class);
+
+	static interface IIntergerRow {
+		public Integer Get(String columnName);
+	}
+
+	static interface IStringRow {
+		public String Get(String columnName);
+	}
+
+	public static Function<ResultSet, IStringRow> mustGetString = (rs) -> (columnName) -> {
+		try {
+			return rs.getString(columnName);
+		} catch (SQLException e) {
+			// no error
+		}
+		return null;
+	};
+
+	public static Function<ResultSet, IIntergerRow> mustGetInteger = (rs) -> (columnName) -> {
+		try {
+			return new Integer(rs.getInt(columnName));
+		} catch (SQLException e) {
+			// no error
+		}
+		return null;
+	};
 
 	@SuppressWarnings("deprecation")
 	public static FullQualifiedName convertEdmTypeFrom(String udtType) {

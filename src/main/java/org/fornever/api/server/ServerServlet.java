@@ -17,7 +17,7 @@ public class ServerServlet extends HttpServlet {
 
 	private static final long serialVersionUID = -5439922120117724291L;
 	private final Logger logger = LoggerFactory.getLogger(getClass());
-	
+
 	@Inject
 	private ODataHttpHandler handler;
 

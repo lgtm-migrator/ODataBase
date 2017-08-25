@@ -24,11 +24,6 @@ public class MetadataTest {
 	@Inject
 	private DataSource datasource;
 
-	@Before
-	public void setUp() {
-		Guice.createInjector(new GuiceBindings()).injectMembers(this);
-	}
-
 	@Test
 	public void printTableNames() throws SQLException {
 		DatabaseMetaData databaseMetaData = datasource.getConnection().getMetaData();
@@ -38,15 +33,20 @@ public class MetadataTest {
 		rs.close();
 	}
 
+	@After
+	public void setDown() {
+	}
+
+	@Before
+	public void setUp() {
+		Guice.createInjector(new GuiceBindings()).injectMembers(this);
+	}
+
 	@Test
 	public void testTableMetadatas() throws SQLException {
 		SchemaMetadata metadata = new SchemaMetadata();
 		metadata.loadMetadata(datasource);
 		assert metadata.getTables().size() > 0;
-		logger.info("demo metadata information :\n{}",JSON.toJSONString(metadata));
-	}
-
-	@After
-	public void setDown() {
+		logger.info("demo metadata information :\n{}", JSON.toJSONString(metadata));
 	}
 }

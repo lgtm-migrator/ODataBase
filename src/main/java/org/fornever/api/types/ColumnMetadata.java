@@ -19,40 +19,136 @@ public class ColumnMetadata {
 	private String isNullable;
 	private String isGenrationColumn;
 
-	public String getTableCatalog() {
-		return tableCatalog;
+	public ColumnMetadata() {
+
 	}
 
-	public void setTableCatalog(String tableCatalog) {
-		this.tableCatalog = tableCatalog;
-	}
-
-	public String getTableSchema() {
-		return tableSchema;
-	}
-
-	public void setTableSchema(String tableSchema) {
-		this.tableSchema = tableSchema;
-	}
-
-	public String getTableName() {
-		return tableName;
-	}
-
-	public void setTableName(String tableName) {
-		this.tableName = tableName;
+	public Integer getCharOcetLength() {
+		return charOcetLength;
 	}
 
 	public String getColumnName() {
 		return columnName;
 	}
 
-	public void setColumnName(String columnName) {
-		this.columnName = columnName;
+	public Integer getColumnSize() {
+		return columnSize;
 	}
 
 	public Integer getDataType() {
 		return dataType;
+	}
+
+	public Integer getDecimalDigits() {
+		return decimalDigits;
+	}
+
+	public String getDefaultValue() {
+		return defaultValue;
+	}
+
+	public String getIsGenrationColumn() {
+		return isGenrationColumn;
+	}
+
+	public String getIsNullable() {
+		return isNullable;
+	}
+
+	public Integer getNullable() {
+		return nullable;
+	}
+
+	public Integer getNumPrexRadix() {
+		return numPrexRadix;
+	}
+
+	public Integer getOridinalPosition() {
+		return oridinalPosition;
+	}
+
+	public String getRemarks() {
+		return remarks;
+	}
+
+	public String getTableCatalog() {
+		return tableCatalog;
+	}
+
+	public String getTableName() {
+		return tableName;
+	}
+
+	public String getTableSchema() {
+		return tableSchema;
+	}
+
+	public String getTypeName() {
+		return typeName;
+	}
+
+	public void setCharOcetLength(Integer charOcetLength) {
+		this.charOcetLength = charOcetLength;
+	}
+
+	public void setColumnName(String columnName) {
+		this.columnName = columnName;
+	}
+
+	public void setColumnSize(Integer columnSize) {
+		this.columnSize = columnSize;
+	}
+
+	public void setDataType(Integer dataType) {
+		this.dataType = dataType;
+	}
+
+	public void setDecimalDigits(Integer decimalDigits) {
+		this.decimalDigits = decimalDigits;
+	}
+
+	public void setDefaultValue(String defaultValue) {
+		this.defaultValue = defaultValue;
+	}
+
+	public void setIsGenrationColumn(String isGenrationColumn) {
+		this.isGenrationColumn = isGenrationColumn;
+	}
+
+	public void setIsNullable(String isNullable) {
+		this.isNullable = isNullable;
+	}
+
+	public void setNullable(Integer nullable) {
+		this.nullable = nullable;
+	}
+
+	public void setNumPrexRadix(Integer numPrexRadix) {
+		this.numPrexRadix = numPrexRadix;
+	}
+
+	public void setOridinalPosition(Integer oridinalPosition) {
+		this.oridinalPosition = oridinalPosition;
+	}
+
+	public void setRemarks(String remarks) {
+		this.remarks = remarks;
+	}
+
+	public void setTableCatalog(String tableCatalog) {
+		this.tableCatalog = tableCatalog;
+	}
+
+	public void setTableName(String tableName) {
+		this.tableName = tableName;
+	}
+
+	public void setTableSchema(String tableSchema) {
+		this.tableSchema = tableSchema;
+	}
+
+	public void setTypeName(String typeName) {
+		this.typeName = typeName;
 	}
 
 	/*
@@ -78,102 +174,6 @@ public class ColumnMetadata {
 				+ (oridinalPosition != null ? "oridinalPosition=" + oridinalPosition + ", " : "")
 				+ (isNullable != null ? "isNullable=" + isNullable + ", " : "")
 				+ (isGenrationColumn != null ? "isGenrationColumn=" + isGenrationColumn : "") + "]";
-	}
-
-	public void setDataType(Integer dataType) {
-		this.dataType = dataType;
-	}
-
-	public String getTypeName() {
-		return typeName;
-	}
-
-	public void setTypeName(String typeName) {
-		this.typeName = typeName;
-	}
-
-	public Integer getColumnSize() {
-		return columnSize;
-	}
-
-	public void setColumnSize(Integer columnSize) {
-		this.columnSize = columnSize;
-	}
-
-	public Integer getDecimalDigits() {
-		return decimalDigits;
-	}
-
-	public void setDecimalDigits(Integer decimalDigits) {
-		this.decimalDigits = decimalDigits;
-	}
-
-	public Integer getNumPrexRadix() {
-		return numPrexRadix;
-	}
-
-	public void setNumPrexRadix(Integer numPrexRadix) {
-		this.numPrexRadix = numPrexRadix;
-	}
-
-	public Integer getNullable() {
-		return nullable;
-	}
-
-	public void setNullable(Integer nullable) {
-		this.nullable = nullable;
-	}
-
-	public String getRemarks() {
-		return remarks;
-	}
-
-	public void setRemarks(String remarks) {
-		this.remarks = remarks;
-	}
-
-	public String getDefaultValue() {
-		return defaultValue;
-	}
-
-	public void setDefaultValue(String defaultValue) {
-		this.defaultValue = defaultValue;
-	}
-
-	public Integer getCharOcetLength() {
-		return charOcetLength;
-	}
-
-	public void setCharOcetLength(Integer charOcetLength) {
-		this.charOcetLength = charOcetLength;
-	}
-
-	public Integer getOridinalPosition() {
-		return oridinalPosition;
-	}
-
-	public void setOridinalPosition(Integer oridinalPosition) {
-		this.oridinalPosition = oridinalPosition;
-	}
-
-	public String getIsNullable() {
-		return isNullable;
-	}
-
-	public void setIsNullable(String isNullable) {
-		this.isNullable = isNullable;
-	}
-
-	public String getIsGenrationColumn() {
-		return isGenrationColumn;
-	}
-
-	public void setIsGenrationColumn(String isGenrationColumn) {
-		this.isGenrationColumn = isGenrationColumn;
-	}
-
-	public ColumnMetadata() {
-
 	}
 
 }

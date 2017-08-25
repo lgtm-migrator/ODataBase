@@ -8,13 +8,10 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.sql.DataSource;
 
-import org.fornever.api.types.JDBCHelper.IStringRow;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SchemaMetadata {
-	
-	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	/**
 	 * New SchemaMetadata
@@ -30,16 +27,18 @@ public class SchemaMetadata {
 		return rt;
 	}
 
+	private Logger logger = LoggerFactory.getLogger(getClass());
+
 	private List<TableMetadata> tables;
 
 	public SchemaMetadata() {
 		this.tables = new ArrayList<>();
 	}
 
-	public TableMetadata getTableByEntitySetName(String entitySetName) {
+	public TableMetadata getTable(String tableName) {
 		TableMetadata rt = null;
 		for (TableMetadata tMeta : getTables()) {
-			if (tMeta.getEntitySetName().equalsIgnoreCase(entitySetName)) {
+			if (tMeta.getTableName().equalsIgnoreCase(tableName)) {
 				rt = tMeta;
 				break;
 			}
@@ -47,10 +46,10 @@ public class SchemaMetadata {
 		return rt;
 	}
 
-	public TableMetadata getTable(String tableName) {
+	public TableMetadata getTableByEntitySetName(String entitySetName) {
 		TableMetadata rt = null;
 		for (TableMetadata tMeta : getTables()) {
-			if (tMeta.getTableName().equalsIgnoreCase(tableName)) {
+			if (tMeta.getEntitySetName().equalsIgnoreCase(entitySetName)) {
 				rt = tMeta;
 				break;
 			}
@@ -67,7 +66,7 @@ public class SchemaMetadata {
 		this.tables = new ArrayList<>();
 		DatabaseMetaData databaseMetaData = connection.getMetaData();
 		ResultSet rs = databaseMetaData.getTables(null, null, null, null);
-		IStringRow stringRow = JDBCHelper.mustGetString.apply(rs);
+		TypeConventer.IStringRow stringRow = TypeConventer.mustGetString.apply(rs);
 		while (rs.next()) {
 			TableMetadata tableMetadata = new TableMetadata();
 			// some fields maybe not exist, use try but not catch
@@ -93,6 +92,14 @@ public class SchemaMetadata {
 		connection.close();
 	}
 
+	/**
+	 * @param tables
+	 *            the tables to set
+	 */
+	public void setTables(List<TableMetadata> tables) {
+		this.tables = tables;
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -101,14 +108,6 @@ public class SchemaMetadata {
 	@Override
 	public String toString() {
 		return "SchemaMetadata [" + (tables != null ? "tables=" + tables : "") + "]";
-	}
-
-	/**
-	 * @param tables
-	 *            the tables to set
-	 */
-	public void setTables(List<TableMetadata> tables) {
-		this.tables = tables;
 	}
 
 }

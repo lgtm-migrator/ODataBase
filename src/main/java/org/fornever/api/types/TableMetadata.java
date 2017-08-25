@@ -7,9 +7,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.fornever.api.types.JDBCHelper.IIntergerRow;
-import org.fornever.api.types.JDBCHelper.IStringRow;
-
 public class TableMetadata {
 
 	private List<ColumnMetadata> columns;
@@ -20,21 +17,6 @@ public class TableMetadata {
 	private String tableName;
 	private String tableType;
 	private String primaryKey;
-
-	/**
-	 * @return the primaryKey
-	 */
-	public String getPrimaryKey() {
-		return primaryKey;
-	}
-
-	/**
-	 * @param primaryKey
-	 *            the primaryKey to set
-	 */
-	public void setPrimaryKey(String primaryKey) {
-		this.primaryKey = primaryKey;
-	}
 
 	private String remarks;
 
@@ -134,6 +116,17 @@ public class TableMetadata {
 		return columns;
 	}
 
+	public String getEntitySetName() {
+		return tableName + "s";
+	}
+
+	/**
+	 * @return the primaryKey
+	 */
+	public String getPrimaryKey() {
+		return primaryKey;
+	}
+
 	public String getRefGeneration() {
 		return refGeneration;
 	}
@@ -152,10 +145,6 @@ public class TableMetadata {
 
 	public String getTableName() {
 		return tableName;
-	}
-
-	public String getEntitySetName() {
-		return tableName + "s";
 	}
 
 	public String getTableSchema() {
@@ -201,8 +190,8 @@ public class TableMetadata {
 			this.columns = new ArrayList<>();
 			DatabaseMetaData metaData = connection.getMetaData();
 			ResultSet rs = metaData.getColumns(getTableCatalog(), getTableSchema(), getTableName(), null);
-			IStringRow stringRow = JDBCHelper.mustGetString.apply(rs);
-			IIntergerRow intergerRow = JDBCHelper.mustGetInteger.apply(rs);
+			TypeConventer.IStringRow stringRow = TypeConventer.mustGetString.apply(rs);
+			TypeConventer.IIntergerRow intergerRow = TypeConventer.mustGetInteger.apply(rs);
 			while (rs.next()) {
 				ColumnMetadata columnMetadata = new ColumnMetadata();
 				columnMetadata.setCharOcetLength(intergerRow.Get("CHAR_OCTET_LENGTH"));
@@ -226,10 +215,18 @@ public class TableMetadata {
 			rs.close();
 			ResultSet rs2 = metaData.getPrimaryKeys(getTableCatalog(), getTableSchema(), getTableName());
 			while (rs2.next()) {
-				stringRow = JDBCHelper.mustGetString.apply(rs2);
+				stringRow = TypeConventer.mustGetString.apply(rs2);
 				setPrimaryKey(stringRow.Get("COLUMN_NAME"));
 			}
 		}
+	}
+
+	/**
+	 * @param primaryKey
+	 *            the primaryKey to set
+	 */
+	public void setPrimaryKey(String primaryKey) {
+		this.primaryKey = primaryKey;
 	}
 
 	public void setRefGeneration(String refGeneration) {

@@ -1,5 +1,6 @@
 package org.fornever.api;
 
+import org.apache.olingo.commons.api.edm.provider.CsdlEdmProvider;
 import org.fornever.api.config.GuiceBindings;
 import org.fornever.api.server.Server;
 import com.google.inject.Guice;
@@ -23,6 +24,8 @@ public class Entry {
 	public static void main(String... args) {
 		// create injector context
 		injector = Guice.createInjector(new GuiceBindings());
+		// init olingo
+		injector.getInstance(CsdlEdmProvider.class);
 		// start Server
 		injector.getInstance(Server.class);
 	}
