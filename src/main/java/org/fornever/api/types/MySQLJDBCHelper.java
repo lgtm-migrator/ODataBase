@@ -4,7 +4,11 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
 import org.apache.commons.dbutils.QueryRunner;
@@ -13,18 +17,32 @@ import org.apache.commons.dbutils.handlers.ScalarHandler;
 import org.apache.olingo.commons.api.data.Entity;
 import org.apache.olingo.commons.api.data.Property;
 import org.apache.olingo.commons.api.data.ValueType;
+import org.apache.olingo.commons.api.edm.EdmEntitySet;
+import org.apache.olingo.commons.api.edm.EdmNavigationPropertyBinding;
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.apache.olingo.commons.api.edm.provider.CsdlNavigationPropertyBinding;
 import org.apache.olingo.commons.api.http.HttpMethod;
 import org.fornever.api.Entry;
+import org.h2.util.New;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
+import com.google.inject.name.Named;
 
+import ca.krasnay.sqlbuilder.DeleteBuilder;
 import ca.krasnay.sqlbuilder.InsertBuilder;
 import ca.krasnay.sqlbuilder.SelectBuilder;
 import ca.krasnay.sqlbuilder.UpdateBuilder;
 
-public class MySQLJDBCHelper {
+public class MySQLJDBCHelper implements JDBCHelper {
+
+	@Inject
+	private SchemaMetadata schemaMatadata;
+
+	@Inject
+	@Named("database.dateformat")
+	private String dateFormat;
 
 	@Inject
 	private QueryRunner queryRunner;
@@ -48,11 +66,20 @@ public class MySQLJDBCHelper {
 		return entity;
 	}
 
+	public Object adaptColumnValue(Property property) {
+		Object o = property.getValue();
+		if (o instanceof GregorianCalendar) {
+			SimpleDateFormat dateFormater = new SimpleDateFormat(this.dateFormat);
+			o = dateFormater.format(((GregorianCalendar) o).getTime());
+		}
+		return o;
+	}
+
 	public Entity createEntityByTableMetadata(TableMetadata tableMetadata, Entity entity) throws SQLException {
 		InsertBuilder builder = new InsertBuilder(tableMetadata.getTableName());
 
 		for (Property property : entity.getProperties()) {
-			builder.set("`" + property.getName() + "`", "'" + property.getValue() + "'");
+			builder.set("`" + property.getName() + "`", "'" + adaptColumnValue(property) + "'");
 		}
 
 		String sql = builder.toString();
@@ -91,7 +118,25 @@ public class MySQLJDBCHelper {
 		return rt;
 	}
 
-	public List<Entity> retriveEntities(TableMetadata tableMetadata) {
+	public Entity retriveEntityByKey(EdmEntitySet edmEntitySet, String priKeyValue) throws SQLException {
+		TableMetadata tableMetadata = schemaMatadata.getTableByEntitySetName(edmEntitySet.getName());
+		SelectBuilder builder = new SelectBuilder(tableMetadata.getTableName());
+		builder.where(String.format("`%s` = '%s'", tableMetadata.getPrimaryKey(), priKeyValue));
+		return queryRunner.query(builder.toString(), new ResultSetHandler<Entity>() {
+
+			@Override
+			public Entity handle(ResultSet rs) throws SQLException {
+				while (rs.next()) {
+					return parseEntityFromRow(rs, tableMetadata);
+				}
+				return null;
+			}
+
+		});
+	}
+
+	public List<Entity> retriveEntities(EdmEntitySet edmEntitySet) {
+		TableMetadata tableMetadata = schemaMatadata.getTableByEntitySetName(edmEntitySet.getName());
 		List<Entity> rt = new ArrayList<>();
 		QueryRunner runner = queryRunner;
 
@@ -128,7 +173,7 @@ public class MySQLJDBCHelper {
 			for (Property property : entity.getProperties()) {
 				// if not primary key
 				if (!tableMetadata.getPrimaryKey().equalsIgnoreCase(property.getName())) {
-					builder.set(String.format("`%s` = '%s'", property.getName(), property.getValue()));
+					builder.set(String.format("`%s` = '%s'", property.getName(), adaptColumnValue(property)));
 				}
 			}
 		} else if (httpMethod == HttpMethod.PUT) {
@@ -140,7 +185,7 @@ public class MySQLJDBCHelper {
 				if (!isPrimaryColumn) {
 					if (property != null) {
 						builder.set(String.format("`%s` = '%s'", columnMetadata.getColumnName(),
-								property.getValue().toString()));
+								adaptColumnValue(property)));
 					} else {
 						builder.set(String.format("`%s` = null", columnMetadata.getColumnName()));
 					}
@@ -154,6 +199,23 @@ public class MySQLJDBCHelper {
 		builder.where(String.format("`%s` = '%s'", tableMetadata.getPrimaryKey(), priKeyValue));
 		return runner.update(builder.toString());
 
+	}
+
+	public void deleteEntityData(EdmEntitySet edmEntitySet, String priKeyValue) throws SQLException {
+		TableMetadata tableMetadata = schemaMatadata.getTableByEntitySetName(edmEntitySet.getName());
+		DeleteBuilder builder = new DeleteBuilder(tableMetadata.getTableName());
+		builder.where(String.format("`%s` = '%s'", tableMetadata.getPrimaryKey(), priKeyValue));
+		Integer affected = queryRunner.execute(builder.toString());
+		if (affected < 1) {
+			throw new SQLException("No any records deleted");
+		}
+	}
+
+	public List<Entity> retriveRelatedEntiteis(EdmEntitySet fkEdmEntitySet, String fkValue,
+			EdmEntitySet pkEdmEntitySet) {
+		TableMetadata fkTableMetadata = schemaMatadata.getTableByEntitySetName(fkEdmEntitySet.getName());
+		TableMetadata pkTableMetadata = schemaMatadata.getTableByEntitySetName(pkEdmEntitySet.getName());
+		return null;
 	}
 
 }

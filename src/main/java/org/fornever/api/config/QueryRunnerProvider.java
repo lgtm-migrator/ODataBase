@@ -14,7 +14,8 @@ public class QueryRunnerProvider implements Provider<QueryRunner> {
 
 	@Override
 	public QueryRunner get() {
-		return new QueryRunner(datasource);
+		QueryRunner runner = new QueryRunner(datasource);
+		return runner;
 	}
 
 }

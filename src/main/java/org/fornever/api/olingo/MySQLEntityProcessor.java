@@ -114,9 +114,7 @@ public class MySQLEntityProcessor implements EntityProcessor {
 		}
 
 		Entity createdEntity = null;
-
 		// validate entity before
-
 		try {
 			createdEntity = jdbcHelper.createEntityByTableMetadata(tableMetadata, requestEntity);
 		} catch (SQLException e) {
@@ -130,6 +128,8 @@ public class MySQLEntityProcessor implements EntityProcessor {
 			throw new ODataApplicationException("Not find created entity",
 					HttpStatusCode.INTERNAL_SERVER_ERROR.getStatusCode(), Locale.ENGLISH);
 		}
+
+		logger.info("entity created: {} {}", edmEntityType.getName(), createdEntity);
 
 		ContextURL contextUrl = ContextURL.with().entitySet(edmEntitySet).build();
 		EntitySerializerOptions options = EntitySerializerOptions.with().contextURL(contextUrl).build();
@@ -187,7 +187,20 @@ public class MySQLEntityProcessor implements EntityProcessor {
 	@Override
 	public void deleteEntity(ODataRequest request, ODataResponse response, UriInfo uriInfo)
 			throws ODataApplicationException, ODataLibraryException {
-		// TODO Auto-generated method stub
+		List<UriResource> resourcePaths = uriInfo.getUriResourceParts();
+		UriResourceEntitySet uriResourceEntitySet = (UriResourceEntitySet) resourcePaths.get(0);
+		EdmEntitySet edmEntitySet = uriResourceEntitySet.getEntitySet();
+
+		List<UriParameter> keyPredicates = uriResourceEntitySet.getKeyPredicates();
+
+		try {
+			jdbcHelper.deleteEntityData(edmEntitySet, OlingoUtil.getPrimaryKeyValue(keyPredicates));
+		} catch (SQLException e) {
+			throw new ODataApplicationException("Error happened when delete record",
+					HttpStatusCode.INTERNAL_SERVER_ERROR.getStatusCode(), Locale.ENGLISH, e);
+		}
+
+		response.setStatusCode(HttpStatusCode.NO_CONTENT.getStatusCode());
 
 	}
 

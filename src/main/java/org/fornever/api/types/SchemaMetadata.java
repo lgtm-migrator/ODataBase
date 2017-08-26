@@ -8,24 +8,16 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.sql.DataSource;
 
+import org.apache.commons.dbutils.QueryRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.inject.Inject;
+
 public class SchemaMetadata {
 
-	/**
-	 * New SchemaMetadata
-	 * 
-	 * @param conn
-	 *            Connection instance
-	 * @return a new SchemaMetadata instance
-	 * @throws SQLException
-	 */
-	public static SchemaMetadata New(Connection conn) throws SQLException {
-		SchemaMetadata rt = new SchemaMetadata();
-		rt.loadMetadata(conn);
-		return rt;
-	}
+	@Inject
+	private QueryRunner runner;
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 

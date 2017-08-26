@@ -42,7 +42,7 @@ public class GuiceBindings extends AbstractModule {
 	protected void configure() {
 		loadProperties();
 		Names.bindProperties(binder(), System.getProperties());
-		bind(DataSource.class).to(DruidDataSource.class).in(Scopes.SINGLETON);
+		bind(DataSource.class).toProvider(DataSourceProvider.class).in(Scopes.SINGLETON);
 		bind(SchemaMetadata.class).in(Scopes.SINGLETON);
 		bind(OData.class).toProvider(ODataProvider.class).in(Scopes.SINGLETON);
 		bind(ODataHttpHandler.class).toProvider(ODataHttpHandlerProvider.class).in(Scopes.SINGLETON);

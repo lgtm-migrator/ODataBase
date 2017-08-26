@@ -7,6 +7,7 @@ import org.apache.olingo.commons.api.edm.EdmEntitySet;
 import org.apache.olingo.commons.api.http.HttpStatusCode;
 import org.apache.olingo.server.api.ODataApplicationException;
 import org.apache.olingo.server.api.uri.UriInfoResource;
+import org.apache.olingo.server.api.uri.UriParameter;
 import org.apache.olingo.server.api.uri.UriResource;
 import org.apache.olingo.server.api.uri.UriResourceEntitySet;
 
@@ -23,5 +24,9 @@ public class OlingoUtil {
 		UriResourceEntitySet uriResource = (UriResourceEntitySet) resourcePaths.get(0);
 
 		return uriResource.getEntitySet();
+	}
+
+	public static String getPrimaryKeyValue(List<UriParameter> uriParameters) {
+		return uriParameters.get(0).getText();
 	}
 }

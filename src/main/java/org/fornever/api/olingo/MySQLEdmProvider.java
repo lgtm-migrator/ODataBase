@@ -22,6 +22,8 @@ import org.apache.olingo.commons.api.edm.provider.CsdlEntityType;
 import org.apache.olingo.commons.api.edm.provider.CsdlEnumType;
 import org.apache.olingo.commons.api.edm.provider.CsdlFunction;
 import org.apache.olingo.commons.api.edm.provider.CsdlFunctionImport;
+import org.apache.olingo.commons.api.edm.provider.CsdlNavigationProperty;
+import org.apache.olingo.commons.api.edm.provider.CsdlNavigationPropertyBinding;
 import org.apache.olingo.commons.api.edm.provider.CsdlProperty;
 import org.apache.olingo.commons.api.edm.provider.CsdlPropertyRef;
 import org.apache.olingo.commons.api.edm.provider.CsdlSchema;
@@ -30,6 +32,7 @@ import org.apache.olingo.commons.api.edm.provider.CsdlTerm;
 import org.apache.olingo.commons.api.edm.provider.CsdlTypeDefinition;
 import org.apache.olingo.commons.api.ex.ODataException;
 import org.fornever.api.types.ColumnMetadata;
+import org.fornever.api.types.ForeignKeyMetadata;
 import org.fornever.api.types.SchemaMetadata;
 import org.fornever.api.types.TableMetadata;
 import org.fornever.api.types.TypeConventer;
@@ -133,8 +136,16 @@ public class MySQLEdmProvider extends CsdlAbstractEdmProvider {
 			TableMetadata tableMetadata = this.schemaMetadata.getTableByEntitySetName(entitySetName);
 			if (tableMetadata != null) {
 				rt = new CsdlEntitySet();
+
+				List<CsdlNavigationPropertyBinding> navPropBindingList = new ArrayList<CsdlNavigationPropertyBinding>();
+				for (ForeignKeyMetadata foreignKey : tableMetadata.getForeignKeys()) {
+					CsdlNavigationPropertyBinding navPropBinding = new CsdlNavigationPropertyBinding();
+					navPropBinding.setPath(foreignKey.getFkColumn()).setTarget(foreignKey.getPkTable() + "s");
+					navPropBindingList.add(navPropBinding);
+				}
 				rt.setName(tableMetadata.getEntitySetName());
 				rt.setType(new FullQualifiedName(this.nameSpace, tableMetadata.getTableName()));
+				rt.setNavigationPropertyBindings(navPropBindingList);
 			}
 		}
 		return rt;
@@ -147,8 +158,8 @@ public class MySQLEdmProvider extends CsdlAbstractEdmProvider {
 		TableMetadata tableMetadata = this.schemaMetadata.getTable(entityName);
 		if (tableMetadata != null) {
 			rt = new CsdlEntityType();
+			// primitive properties
 			List<CsdlProperty> properties = new ArrayList<>();
-
 			for (ColumnMetadata columnMetadata : tableMetadata.getColumns()) {
 				FullQualifiedName type = TypeConventer.convertEdmTypeFrom(columnMetadata.getTypeName());
 				CsdlProperty colProp = new CsdlProperty();
@@ -164,9 +175,18 @@ public class MySQLEdmProvider extends CsdlAbstractEdmProvider {
 				colProp.setDefaultValue(colProp.getDefaultValue());
 				properties.add(colProp);
 			}
+			// navigation properties
+			List<CsdlNavigationProperty> navPropList = new ArrayList<CsdlNavigationProperty>();
+			for (ForeignKeyMetadata foreignKey : tableMetadata.getForeignKeys()) {
+				CsdlNavigationProperty property = new CsdlNavigationProperty();
+				property.setName(foreignKey.getFkColumn())
+						.setType(new FullQualifiedName(nameSpace, foreignKey.getPkTable()));
+				navPropList.add(property);
+			}
 
 			rt.setName(tableMetadata.getTableName());
 			rt.setProperties(properties);
+			rt.setNavigationProperties(navPropList);
 
 			if (tableMetadata.getPrimaryKey() != null) {
 				CsdlPropertyRef propertyRef = new CsdlPropertyRef();

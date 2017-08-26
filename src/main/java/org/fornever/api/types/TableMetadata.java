@@ -7,6 +7,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.inject.spi.TypeConverter;
+
 public class TableMetadata {
 
 	private List<ColumnMetadata> columns;
@@ -30,8 +32,11 @@ public class TableMetadata {
 
 	private String refGeneration;
 
+	private List<ForeignKeyMetadata> foreignKeys;
+
 	public TableMetadata() {
 		this.columns = new ArrayList<>();
+		this.foreignKeys = new ArrayList<>();
 	}
 
 	@Override
@@ -118,6 +123,13 @@ public class TableMetadata {
 
 	public String getEntitySetName() {
 		return tableName + "s";
+	}
+
+	/**
+	 * @return the foreignKeys
+	 */
+	public List<ForeignKeyMetadata> getForeignKeys() {
+		return foreignKeys;
 	}
 
 	/**
@@ -214,11 +226,42 @@ public class TableMetadata {
 			}
 			rs.close();
 			ResultSet rs2 = metaData.getPrimaryKeys(getTableCatalog(), getTableSchema(), getTableName());
+			this.primaryKey = null;
 			while (rs2.next()) {
 				stringRow = TypeConventer.mustGetString.apply(rs2);
 				setPrimaryKey(stringRow.Get("COLUMN_NAME"));
 			}
+			rs2.close();
+
+			ResultSet rs3 = metaData.getImportedKeys(getTableCatalog(), getTableSchema(), getTableName());
+			stringRow = TypeConventer.mustGetString.apply(rs3);
+			this.foreignKeys = new ArrayList<>();
+			while (rs3.next()) {
+				ForeignKeyMetadata foreignKey = new ForeignKeyMetadata();
+				foreignKey.setFkColumn(stringRow.Get("FKCOLUMN_NAME"));
+				foreignKey.setFkTable(stringRow.Get("FKTABLE_NAME"));
+				foreignKey.setPkColumn(stringRow.Get("PKCOLUMN_NAME"));
+				foreignKey.setPkTable(stringRow.Get("PKTABLE_NAME"));
+				this.foreignKeys.add(foreignKey);
+			}
+			rs3.close();
 		}
+	}
+
+	/**
+	 * @param columns
+	 *            the columns to set
+	 */
+	public void setColumns(List<ColumnMetadata> columns) {
+		this.columns = columns;
+	}
+
+	/**
+	 * @param foreignKeys
+	 *            the foreignKeys to set
+	 */
+	public void setForeignKeys(List<ForeignKeyMetadata> foreignKeys) {
+		this.foreignKeys = foreignKeys;
 	}
 
 	/**
@@ -276,18 +319,11 @@ public class TableMetadata {
 	 */
 	@Override
 	public String toString() {
-		return "TableMetadata [" + (columns != null ? "columns=" + columns + ", " : "")
-				+ (tableCatalog != null ? "tableCatalog=" + tableCatalog + ", " : "")
-				+ (tableSchema != null ? "tableSchema=" + tableSchema + ", " : "")
-				+ (tableName != null ? "tableName=" + tableName + ", " : "")
-				+ (tableType != null ? "tableType=" + tableType + ", " : "")
-				+ (primaryKey != null ? "primaryKey=" + primaryKey + ", " : "")
-				+ (remarks != null ? "remarks=" + remarks + ", " : "")
-				+ (typeCatalog != null ? "typeCatalog=" + typeCatalog + ", " : "")
-				+ (typeSchema != null ? "typeSchema=" + typeSchema + ", " : "")
-				+ (typeName != null ? "typeName=" + typeName + ", " : "")
-				+ (selfReferencingColName != null ? "selfReferencingColName=" + selfReferencingColName + ", " : "")
-				+ (refGeneration != null ? "refGeneration=" + refGeneration : "") + "]";
+		return "TableMetadata [columns=" + columns + ", tableCatalog=" + tableCatalog + ", tableSchema=" + tableSchema
+				+ ", tableName=" + tableName + ", tableType=" + tableType + ", primaryKey=" + primaryKey + ", remarks="
+				+ remarks + ", typeCatalog=" + typeCatalog + ", typeSchema=" + typeSchema + ", typeName=" + typeName
+				+ ", selfReferencingColName=" + selfReferencingColName + ", refGeneration=" + refGeneration
+				+ ", foreignKeys=" + foreignKeys + "]";
 	}
 
 }

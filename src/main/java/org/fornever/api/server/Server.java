@@ -5,6 +5,7 @@ import javax.servlet.ServletException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.alibaba.druid.support.http.StatViewServlet;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 
@@ -19,12 +20,16 @@ public class Server {
 
 	@Inject
 	public Server(@Named("odata.name") String serviceName, @Named("api.server.port") Integer port,
-			@Named("api.server.addr") String addr) throws ServletException {
+			@Named("api.server.addr") String addr, @Named("api.server.debug") Boolean debug) throws ServletException {
 		// base url
 		String baseUrl = "/" + serviceName + ".svc";
 		DeploymentInfo servletBuilder = Servlets.deployment().setClassLoader(getClass().getClassLoader())
-				.setDeploymentName("odata").setContextPath(baseUrl)
+				.setDeploymentName("odata").setContextPath("/")
 				.addServlets(Servlets.servlet("odata", ServerServlet.class).addMapping(baseUrl + "/*"));
+		if (debug) {
+			logger.info("debug with /druid/index.html");
+			servletBuilder.addServlets(Servlets.servlet("stat", StatViewServlet.class).addMapping("/druid/*"));
+		}
 		DeploymentManager manager = Servlets.defaultContainer().addDeployment(servletBuilder);
 		manager.deploy();
 		// start server

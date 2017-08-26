@@ -4,15 +4,19 @@
 package org.fornever.api.olingo;
 
 import java.io.InputStream;
+import java.sql.SQLException;
 import java.util.List;
+import java.util.Locale;
 
 import javax.sql.DataSource;
 
 import org.apache.olingo.commons.api.data.ContextURL;
 import org.apache.olingo.commons.api.data.Entity;
 import org.apache.olingo.commons.api.data.EntityCollection;
+import org.apache.olingo.commons.api.edm.EdmBindingTarget;
 import org.apache.olingo.commons.api.edm.EdmEntitySet;
 import org.apache.olingo.commons.api.edm.EdmEntityType;
+import org.apache.olingo.commons.api.edm.EdmNavigationPropertyBinding;
 import org.apache.olingo.commons.api.edm.provider.CsdlEdmProvider;
 import org.apache.olingo.commons.api.format.ContentType;
 import org.apache.olingo.commons.api.http.HttpHeader;
@@ -28,8 +32,10 @@ import org.apache.olingo.server.api.serializer.EntityCollectionSerializerOptions
 import org.apache.olingo.server.api.serializer.ODataSerializer;
 import org.apache.olingo.server.api.serializer.SerializerResult;
 import org.apache.olingo.server.api.uri.UriInfo;
+import org.apache.olingo.server.api.uri.UriParameter;
 import org.apache.olingo.server.api.uri.UriResource;
 import org.apache.olingo.server.api.uri.UriResourceEntitySet;
+import org.apache.olingo.server.api.uri.UriResourceNavigation;
 import org.fornever.api.types.MySQLJDBCHelper;
 import org.fornever.api.types.SchemaMetadata;
 import org.fornever.api.types.TableMetadata;
@@ -56,24 +62,15 @@ public class MySQLEntityCollectionProcessor implements EntityCollectionProcessor
 
 	@Inject
 	private DataSource dataSource;
-	
-	@Inject 
-	private MySQLJDBCHelper jdbcHelper;
 
-	private EntityCollection getData(EdmEntitySet edmEntitySet) {
-		EntityCollection rt = new EntityCollection();
-		List<Entity> entities = rt.getEntities();
-		TableMetadata tableMetadata = this.schemaMetadata.getTableByEntitySetName(edmEntitySet.getName());
-		if (tableMetadata != null) {
-			entities.addAll(jdbcHelper.retriveEntities(tableMetadata));
-		}
-		return rt;
-	}
+	@Inject
+	private MySQLJDBCHelper jdbcHelper;
 
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see org.apache.olingo.server.api.processor.Processor#init(org.apache.olingo.
+	 * @see
+	 * org.apache.olingo.server.api.processor.Processor#init(org.apache.olingo.
 	 * server.api.OData, org.apache.olingo.server.api.ServiceMetadata)
 	 */
 	@Override
@@ -96,15 +93,49 @@ public class MySQLEntityCollectionProcessor implements EntityCollectionProcessor
 			ContentType responseFormat) throws ODataApplicationException, ODataLibraryException {
 
 		List<UriResource> resourcePaths = uriInfo.getUriResourceParts();
+		Integer segmentCount = resourcePaths.size();
+
 		UriResourceEntitySet uriResourceEntitySet = (UriResourceEntitySet) resourcePaths.get(0);
-		EdmEntitySet edmEntitySet = uriResourceEntitySet.getEntitySet();
-		EntityCollection entitySet = getData(edmEntitySet);
+		EdmEntitySet startEdmEntitySet = uriResourceEntitySet.getEntitySet();
+		EntityCollection entitySet = new EntityCollection();
+		List<Entity> entities = entitySet.getEntities();
+
+		switch (segmentCount) {
+		case 1:
+			entities.addAll(jdbcHelper.retriveEntities(startEdmEntitySet));
+			break;
+//		case 2:
+//			UriResourceNavigation uriResourceNavigation = (UriResourceNavigation) resourcePaths.get(1);
+//			EdmBindingTarget target = startEdmEntitySet.getRelatedBindingTarget(resourcePaths.get(1).toString());
+//			EdmEntitySet secondEdmEntitySet = ((UriResourceEntitySet) resourcePaths.get(1)).getEntitySet();
+//			String key = OlingoUtil.getPrimaryKeyValue(uriResourceEntitySet.getKeyPredicates());
+//			try {
+//				Entity startEntity = jdbcHelper.retriveEntityByKey(startEdmEntitySet, key);
+//				List<Entity> relatedEntities = jdbcHelper.retriveRelatedEntiteis(startEdmEntitySet, key,
+//						secondEdmEntitySet);
+//				EdmNavigationPropertyBinding navigationBinding = null;
+//				for (EdmNavigationPropertyBinding binding : startEdmEntitySet.getNavigationPropertyBindings()) {
+//					if (binding.getTarget().equalsIgnoreCase(
+//							secondEdmEntitySet.getEntityType().getFullQualifiedName().getFullQualifiedNameAsString())) {
+//
+//					}
+//				}
+//
+//			} catch (SQLException e) {
+//				throw new ODataApplicationException("Retrive Error",
+//						HttpStatusCode.INTERNAL_SERVER_ERROR.getStatusCode(), Locale.ENGLISH);
+//			}
+//			break;
+		default:
+			throw new ODataApplicationException("Not supported", HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(),
+					Locale.ENGLISH);
+		}
 
 		ODataSerializer serializer = odata.createSerializer(responseFormat);
-		EdmEntityType edmEntityType = edmEntitySet.getEntityType();
-		ContextURL contextUrl = ContextURL.with().entitySet(edmEntitySet).build();
+		EdmEntityType edmEntityType = startEdmEntitySet.getEntityType();
+		ContextURL contextUrl = ContextURL.with().entitySet(startEdmEntitySet).build();
 
-		final String id = request.getRawBaseUri() + "/" + edmEntitySet.getName();
+		final String id = request.getRawBaseUri() + "/" + startEdmEntitySet.getName();
 		EntityCollectionSerializerOptions opts = EntityCollectionSerializerOptions.with().id(id).contextURL(contextUrl)
 				.build();
 		SerializerResult serializerResult = serializer.entityCollection(serviceMetadata, edmEntityType, entitySet,
