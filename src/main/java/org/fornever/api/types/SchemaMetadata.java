@@ -1,13 +1,7 @@
 package org.fornever.api.types;
 
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import javax.sql.DataSource;
-
 import org.apache.commons.dbutils.QueryRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,37 +45,6 @@ public class SchemaMetadata {
 
 	public List<TableMetadata> getTables() {
 		return tables;
-	}
-
-	public void loadMetadata(Connection connection) throws SQLException {
-		this.logger.info("start load database metadata");
-		this.tables = new ArrayList<>();
-		DatabaseMetaData databaseMetaData = connection.getMetaData();
-		ResultSet rs = databaseMetaData.getTables(null, null, null, null);
-		TypeConventer.IStringRow stringRow = TypeConventer.mustGetString.apply(rs);
-		while (rs.next()) {
-			TableMetadata tableMetadata = new TableMetadata();
-			// some fields maybe not exist, use try but not catch
-			tableMetadata.setRefGeneration(stringRow.Get("REF_GENERATION"));
-			tableMetadata.setRemarks(stringRow.Get("REMARKS"));
-			tableMetadata.setSelfReferencingColName(stringRow.Get("SELF_REFERENCING_COL_NAME"));
-			tableMetadata.setTableCatalog(stringRow.Get("TABLE_CAT"));
-			tableMetadata.setTableName(stringRow.Get("TABLE_NAME"));
-			tableMetadata.setTableSchema(stringRow.Get("TABLE_SCHEM"));
-			tableMetadata.setTableSchema(stringRow.Get("TABLE_SCHEM"));
-			tableMetadata.setTableType(stringRow.Get("TABLE_TYPE"));
-			tableMetadata.setTypeCatalog(stringRow.Get("TYPE_CAT"));
-			tableMetadata.setTypeName(stringRow.Get("TYPE_NAME"));
-			tableMetadata.setTypeSchema(stringRow.Get("TYPE_SCHEM"));
-			tableMetadata.loadMetadata(databaseMetaData.getConnection());
-			this.tables.add(tableMetadata);
-		}
-	}
-
-	public void loadMetadata(DataSource dataSource) throws SQLException {
-		Connection connection = dataSource.getConnection();
-		loadMetadata(connection);
-		connection.close();
 	}
 
 	/**

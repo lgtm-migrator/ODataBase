@@ -4,7 +4,6 @@
 package org.fornever.api.olingo;
 
 import java.io.InputStream;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Locale;
 
@@ -13,10 +12,8 @@ import javax.sql.DataSource;
 import org.apache.olingo.commons.api.data.ContextURL;
 import org.apache.olingo.commons.api.data.Entity;
 import org.apache.olingo.commons.api.data.EntityCollection;
-import org.apache.olingo.commons.api.edm.EdmBindingTarget;
 import org.apache.olingo.commons.api.edm.EdmEntitySet;
 import org.apache.olingo.commons.api.edm.EdmEntityType;
-import org.apache.olingo.commons.api.edm.EdmNavigationPropertyBinding;
 import org.apache.olingo.commons.api.edm.provider.CsdlEdmProvider;
 import org.apache.olingo.commons.api.format.ContentType;
 import org.apache.olingo.commons.api.http.HttpHeader;
@@ -32,21 +29,17 @@ import org.apache.olingo.server.api.serializer.EntityCollectionSerializerOptions
 import org.apache.olingo.server.api.serializer.ODataSerializer;
 import org.apache.olingo.server.api.serializer.SerializerResult;
 import org.apache.olingo.server.api.uri.UriInfo;
-import org.apache.olingo.server.api.uri.UriParameter;
 import org.apache.olingo.server.api.uri.UriResource;
 import org.apache.olingo.server.api.uri.UriResourceEntitySet;
-import org.apache.olingo.server.api.uri.UriResourceNavigation;
-import org.fornever.api.types.MySQLJDBCHelper;
+import org.fornever.api.database.mysql.MySQLJDBCHelper;
 import org.fornever.api.types.SchemaMetadata;
-import org.fornever.api.types.TableMetadata;
-
 import com.google.inject.Inject;
 
 /**
  * @author Theo Sun
  *
  */
-public class MySQLEntityCollectionProcessor implements EntityCollectionProcessor {
+public class EntityCollectionProcessorImpl implements EntityCollectionProcessor {
 
 	@Inject
 	private OData odata;

@@ -31,7 +31,7 @@ import org.apache.olingo.server.api.uri.UriInfo;
 import org.apache.olingo.server.api.uri.UriParameter;
 import org.apache.olingo.server.api.uri.UriResource;
 import org.apache.olingo.server.api.uri.UriResourceEntitySet;
-import org.fornever.api.types.MySQLJDBCHelper;
+import org.fornever.api.database.mysql.MySQLJDBCHelper;
 import org.fornever.api.types.SchemaMetadata;
 import org.fornever.api.types.TableMetadata;
 import org.slf4j.Logger;
@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
 
-public class MySQLEntityProcessor implements EntityProcessor {
+public class EntityProcessorImpl implements EntityProcessor {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 

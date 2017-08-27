@@ -1,11 +1,8 @@
 package org.fornever.api.olingo;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import javax.sql.DataSource;
 
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -46,10 +43,9 @@ import com.google.inject.name.Named;
  * @author Theo Sun
  *
  */
-public class MySQLEdmProvider extends CsdlAbstractEdmProvider {
+public class EdmProviderImpl extends CsdlAbstractEdmProvider {
 
-	private DataSource datasource;
-
+	@Inject
 	private SchemaMetadata schemaMetadata;
 
 	@Inject
@@ -59,14 +55,6 @@ public class MySQLEdmProvider extends CsdlAbstractEdmProvider {
 	@Inject
 	@Named("odata.container")
 	private String containerName;
-
-	@Inject
-	public MySQLEdmProvider(DataSource datasource, SchemaMetadata schemaMetadata) throws SQLException {
-		super();
-		this.datasource = datasource;
-		this.schemaMetadata = schemaMetadata;
-		this.schemaMetadata.loadMetadata(datasource);
-	}
 
 	@Override
 	public CsdlActionImport getActionImport(FullQualifiedName entityContainer, String actionImportName)
@@ -138,11 +126,18 @@ public class MySQLEdmProvider extends CsdlAbstractEdmProvider {
 				rt = new CsdlEntitySet();
 
 				List<CsdlNavigationPropertyBinding> navPropBindingList = new ArrayList<CsdlNavigationPropertyBinding>();
-				for (ForeignKeyMetadata foreignKey : tableMetadata.getForeignKeys()) {
-					CsdlNavigationPropertyBinding navPropBinding = new CsdlNavigationPropertyBinding();
-					navPropBinding.setPath(foreignKey.getFkColumn()).setTarget(foreignKey.getPkTable() + "s");
-					navPropBindingList.add(navPropBinding);
-				}
+				if (tableMetadata.getForeignKeys().size() > 0)
+					for (ForeignKeyMetadata foreignKey : tableMetadata.getForeignKeys()) {
+						CsdlNavigationPropertyBinding navPropBinding = new CsdlNavigationPropertyBinding();
+						navPropBinding.setPath(foreignKey.getKeyName()).setTarget(foreignKey.getRefTable() + "s");
+						navPropBindingList.add(navPropBinding);
+					}
+				if (tableMetadata.getRefedForeignKeys().size() > 0)
+					for (ForeignKeyMetadata foreignKey : tableMetadata.getRefedForeignKeys()) {
+						CsdlNavigationPropertyBinding navPropBinding = new CsdlNavigationPropertyBinding();
+						navPropBinding.setPath(foreignKey.getKeyName()).setTarget(foreignKey.getTable() + "s");
+						navPropBindingList.add(navPropBinding);
+					}
 				rt.setName(tableMetadata.getEntitySetName());
 				rt.setType(new FullQualifiedName(this.nameSpace, tableMetadata.getTableName()));
 				rt.setNavigationPropertyBindings(navPropBindingList);
@@ -177,12 +172,22 @@ public class MySQLEdmProvider extends CsdlAbstractEdmProvider {
 			}
 			// navigation properties
 			List<CsdlNavigationProperty> navPropList = new ArrayList<CsdlNavigationProperty>();
-			for (ForeignKeyMetadata foreignKey : tableMetadata.getForeignKeys()) {
-				CsdlNavigationProperty property = new CsdlNavigationProperty();
-				property.setName(foreignKey.getFkColumn())
-						.setType(new FullQualifiedName(nameSpace, foreignKey.getPkTable()));
-				navPropList.add(property);
-			}
+			// one to one
+			if (tableMetadata.getForeignKeys().size() > 0)
+				for (ForeignKeyMetadata foreignKey : tableMetadata.getForeignKeys()) {
+					CsdlNavigationProperty property = new CsdlNavigationProperty();
+					property.setName(foreignKey.getKeyName())
+							.setType(new FullQualifiedName(nameSpace, foreignKey.getRefTable()));
+					navPropList.add(property);
+				}
+			// one to many
+			if (tableMetadata.getRefedForeignKeys().size() > 0)
+				for (ForeignKeyMetadata foreignKey : tableMetadata.getRefedForeignKeys()) {
+					CsdlNavigationProperty property = new CsdlNavigationProperty();
+					property.setName(foreignKey.getKeyName())
+							.setType(new FullQualifiedName(nameSpace, foreignKey.getTable())).setCollection(true);
+					navPropList.add(property);
+				}
 
 			rt.setName(tableMetadata.getTableName());
 			rt.setProperties(properties);

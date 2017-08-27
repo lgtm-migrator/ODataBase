@@ -1,13 +1,7 @@
 package org.fornever.api.types;
 
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-
-import com.google.inject.spi.TypeConverter;
 
 public class TableMetadata {
 
@@ -32,13 +26,28 @@ public class TableMetadata {
 
 	private String refGeneration;
 
+	/**
+	 * This table foreign keys <br>
+	 * 此Table的外键
+	 */
 	private List<ForeignKeyMetadata> foreignKeys;
+
+	/**
+	 * The other table foreign keys which reference this table primary key <br>
+	 * 其它Table中引用了此Table组件的外键
+	 */
+	private List<ForeignKeyMetadata> refPkForeignKeys;
 
 	public TableMetadata() {
 		this.columns = new ArrayList<>();
 		this.foreignKeys = new ArrayList<>();
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj)
@@ -53,10 +62,25 @@ public class TableMetadata {
 				return false;
 		} else if (!columns.equals(other.columns))
 			return false;
+		if (foreignKeys == null) {
+			if (other.foreignKeys != null)
+				return false;
+		} else if (!foreignKeys.equals(other.foreignKeys))
+			return false;
+		if (primaryKey == null) {
+			if (other.primaryKey != null)
+				return false;
+		} else if (!primaryKey.equals(other.primaryKey))
+			return false;
 		if (refGeneration == null) {
 			if (other.refGeneration != null)
 				return false;
 		} else if (!refGeneration.equals(other.refGeneration))
+			return false;
+		if (refPkForeignKeys == null) {
+			if (other.refPkForeignKeys != null)
+				return false;
+		} else if (!refPkForeignKeys.equals(other.refPkForeignKeys))
 			return false;
 		if (remarks == null) {
 			if (other.remarks != null)
@@ -143,6 +167,13 @@ public class TableMetadata {
 		return refGeneration;
 	}
 
+	/**
+	 * @return the refPkForeignKeys
+	 */
+	public List<ForeignKeyMetadata> getRefedForeignKeys() {
+		return refPkForeignKeys;
+	}
+
 	public String getRemarks() {
 		return remarks;
 	}
@@ -179,12 +210,20 @@ public class TableMetadata {
 		return typeSchema;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#hashCode()
+	 */
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((columns == null) ? 0 : columns.hashCode());
+		result = prime * result + ((foreignKeys == null) ? 0 : foreignKeys.hashCode());
+		result = prime * result + ((primaryKey == null) ? 0 : primaryKey.hashCode());
 		result = prime * result + ((refGeneration == null) ? 0 : refGeneration.hashCode());
+		result = prime * result + ((refPkForeignKeys == null) ? 0 : refPkForeignKeys.hashCode());
 		result = prime * result + ((remarks == null) ? 0 : remarks.hashCode());
 		result = prime * result + ((selfReferencingColName == null) ? 0 : selfReferencingColName.hashCode());
 		result = prime * result + ((tableCatalog == null) ? 0 : tableCatalog.hashCode());
@@ -195,57 +234,6 @@ public class TableMetadata {
 		result = prime * result + ((typeName == null) ? 0 : typeName.hashCode());
 		result = prime * result + ((typeSchema == null) ? 0 : typeSchema.hashCode());
 		return result;
-	}
-
-	public void loadMetadata(Connection connection) throws SQLException {
-		if (this.tableName != null && !this.tableName.isEmpty()) {
-			this.columns = new ArrayList<>();
-			DatabaseMetaData metaData = connection.getMetaData();
-			ResultSet rs = metaData.getColumns(getTableCatalog(), getTableSchema(), getTableName(), null);
-			TypeConventer.IStringRow stringRow = TypeConventer.mustGetString.apply(rs);
-			TypeConventer.IIntergerRow intergerRow = TypeConventer.mustGetInteger.apply(rs);
-			while (rs.next()) {
-				ColumnMetadata columnMetadata = new ColumnMetadata();
-				columnMetadata.setCharOcetLength(intergerRow.Get("CHAR_OCTET_LENGTH"));
-				columnMetadata.setColumnName(stringRow.Get("COLUMN_NAME"));
-				columnMetadata.setColumnSize(intergerRow.Get("COLUMN_SIZE"));
-				columnMetadata.setDataType(intergerRow.Get("DATA_TYPE"));
-				columnMetadata.setDecimalDigits(intergerRow.Get("DECIMAL_DIGITS"));
-				columnMetadata.setDefaultValue(stringRow.Get("COLUMN_DEF"));
-				columnMetadata.setIsGenrationColumn(stringRow.Get("IS_GENERATEDCOLUMN"));
-				columnMetadata.setIsNullable(stringRow.Get("IS_NULLABLE"));
-				columnMetadata.setNullable(intergerRow.Get("NULLABLE"));
-				columnMetadata.setNumPrexRadix(intergerRow.Get("NUM_PREC_RADIX"));
-				columnMetadata.setOridinalPosition(intergerRow.Get("ORDINAL_POSITION"));
-				columnMetadata.setRemarks(stringRow.Get("REMARKS"));
-				columnMetadata.setTableCatalog(stringRow.Get("TABLE_CAT"));
-				columnMetadata.setTableName(stringRow.Get("TABLE_NAME"));
-				columnMetadata.setTableSchema(stringRow.Get("TABLE_SCHEM"));
-				columnMetadata.setTypeName(stringRow.Get("TYPE_NAME"));
-				this.columns.add(columnMetadata);
-			}
-			rs.close();
-			ResultSet rs2 = metaData.getPrimaryKeys(getTableCatalog(), getTableSchema(), getTableName());
-			this.primaryKey = null;
-			while (rs2.next()) {
-				stringRow = TypeConventer.mustGetString.apply(rs2);
-				setPrimaryKey(stringRow.Get("COLUMN_NAME"));
-			}
-			rs2.close();
-
-			ResultSet rs3 = metaData.getImportedKeys(getTableCatalog(), getTableSchema(), getTableName());
-			stringRow = TypeConventer.mustGetString.apply(rs3);
-			this.foreignKeys = new ArrayList<>();
-			while (rs3.next()) {
-				ForeignKeyMetadata foreignKey = new ForeignKeyMetadata();
-				foreignKey.setFkColumn(stringRow.Get("FKCOLUMN_NAME"));
-				foreignKey.setFkTable(stringRow.Get("FKTABLE_NAME"));
-				foreignKey.setPkColumn(stringRow.Get("PKCOLUMN_NAME"));
-				foreignKey.setPkTable(stringRow.Get("PKTABLE_NAME"));
-				this.foreignKeys.add(foreignKey);
-			}
-			rs3.close();
-		}
 	}
 
 	/**
@@ -274,6 +262,14 @@ public class TableMetadata {
 
 	public void setRefGeneration(String refGeneration) {
 		this.refGeneration = refGeneration;
+	}
+
+	/**
+	 * @param refPkForeignKeys
+	 *            the refPkForeignKeys to set
+	 */
+	public void setRefPkForeignKeys(List<ForeignKeyMetadata> refPkForeignKeys) {
+		this.refPkForeignKeys = refPkForeignKeys;
 	}
 
 	public void setRemarks(String remarks) {
@@ -323,7 +319,7 @@ public class TableMetadata {
 				+ ", tableName=" + tableName + ", tableType=" + tableType + ", primaryKey=" + primaryKey + ", remarks="
 				+ remarks + ", typeCatalog=" + typeCatalog + ", typeSchema=" + typeSchema + ", typeName=" + typeName
 				+ ", selfReferencingColName=" + selfReferencingColName + ", refGeneration=" + refGeneration
-				+ ", foreignKeys=" + foreignKeys + "]";
+				+ ", foreignKeys=" + foreignKeys + ", refPkForeignKeys=" + refPkForeignKeys + "]";
 	}
 
 }

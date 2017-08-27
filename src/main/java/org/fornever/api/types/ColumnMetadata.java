@@ -158,22 +158,12 @@ public class ColumnMetadata {
 	 */
 	@Override
 	public String toString() {
-		return "ColumnMetadata [" + (tableCatalog != null ? "tableCatalog=" + tableCatalog + ", " : "")
-				+ (tableSchema != null ? "tableSchema=" + tableSchema + ", " : "")
-				+ (tableName != null ? "tableName=" + tableName + ", " : "")
-				+ (columnName != null ? "columnName=" + columnName + ", " : "")
-				+ (dataType != null ? "dataType=" + dataType + ", " : "")
-				+ (typeName != null ? "typeName=" + typeName + ", " : "")
-				+ (columnSize != null ? "columnSize=" + columnSize + ", " : "")
-				+ (decimalDigits != null ? "decimalDigits=" + decimalDigits + ", " : "")
-				+ (numPrexRadix != null ? "numPrexRadix=" + numPrexRadix + ", " : "")
-				+ (nullable != null ? "nullable=" + nullable + ", " : "")
-				+ (remarks != null ? "remarks=" + remarks + ", " : "")
-				+ (defaultValue != null ? "defaultValue=" + defaultValue + ", " : "")
-				+ (charOcetLength != null ? "charOcetLength=" + charOcetLength + ", " : "")
-				+ (oridinalPosition != null ? "oridinalPosition=" + oridinalPosition + ", " : "")
-				+ (isNullable != null ? "isNullable=" + isNullable + ", " : "")
-				+ (isGenrationColumn != null ? "isGenrationColumn=" + isGenrationColumn : "") + "]";
+		return "ColumnMetadata [tableCatalog=" + tableCatalog + ", tableSchema=" + tableSchema + ", tableName="
+				+ tableName + ", columnName=" + columnName + ", dataType=" + dataType + ", typeName=" + typeName
+				+ ", columnSize=" + columnSize + ", decimalDigits=" + decimalDigits + ", numPrexRadix=" + numPrexRadix
+				+ ", nullable=" + nullable + ", remarks=" + remarks + ", defaultValue=" + defaultValue
+				+ ", charOcetLength=" + charOcetLength + ", oridinalPosition=" + oridinalPosition + ", isNullable="
+				+ isNullable + ", isGenrationColumn=" + isGenrationColumn + "]";
 	}
 
 }

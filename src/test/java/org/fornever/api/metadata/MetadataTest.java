@@ -22,16 +22,10 @@ public class MetadataTest {
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Inject
-	private DataSource datasource;
+	SchemaMetadata metadata;
 
-	@Test
-	public void printTableNames() throws SQLException {
-		DatabaseMetaData databaseMetaData = datasource.getConnection().getMetaData();
-		ResultSet rs = databaseMetaData.getTables(null, null, null, null);
-		rs.next();
-		assert !rs.getString("TABLE_NAME").isEmpty();
-		rs.close();
-	}
+	@Inject
+	private DataSource datasource;
 
 	@After
 	public void setDown() {
@@ -45,7 +39,6 @@ public class MetadataTest {
 	@Test
 	public void testTableMetadatas() throws SQLException {
 		SchemaMetadata metadata = new SchemaMetadata();
-		metadata.loadMetadata(datasource);
 		assert metadata.getTables().size() > 0;
 		logger.info("demo metadata information :\n{}", JSON.toJSONString(metadata));
 	}

@@ -15,7 +15,7 @@ import org.fornever.api.types.SchemaMetadata;
 
 import com.google.inject.Inject;
 
-public class MySQLPrimitiveProcessor implements PrimitiveProcessor {
+public class PrimitiveProcessorImpl implements PrimitiveProcessor {
 
 	@Inject
 	private OData odata;

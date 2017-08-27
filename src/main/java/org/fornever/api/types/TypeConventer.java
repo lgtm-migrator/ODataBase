@@ -12,25 +12,29 @@ import org.slf4j.LoggerFactory;
 public class TypeConventer {
 
 	private static Logger logger = LoggerFactory.getLogger(TypeConventer.class);
+	
+	public static interface IMustGetRow<T> {
+		public T Get(String columnName);
+	}
 
-	static interface IIntergerRow {
+	public static interface IIntergerRow {
 		public Integer Get(String columnName);
 	}
 
-	static interface IStringRow {
+	public static interface IStringRow {
 		public String Get(String columnName);
 	}
-
-	public static Function<ResultSet, IStringRow> mustGetString = (rs) -> (columnName) -> {
+	
+	public static Function<ResultSet, IMustGetRow<String>> mustGetString = (rs) -> (columnName) -> {
 		try {
 			return rs.getString(columnName);
 		} catch (SQLException e) {
-			// no error
+			// ignore error
 		}
 		return null;
 	};
 
-	public static Function<ResultSet, IIntergerRow> mustGetInteger = (rs) -> (columnName) -> {
+	public static Function<ResultSet, IMustGetRow<Integer>> mustGetInteger = (rs) -> (columnName) -> {
 		try {
 			return new Integer(rs.getInt(columnName));
 		} catch (SQLException e) {
@@ -39,7 +43,6 @@ public class TypeConventer {
 		return null;
 	};
 
-	@SuppressWarnings("deprecation")
 	public static FullQualifiedName convertEdmTypeFrom(String udtType) {
 		FullQualifiedName rt = null;
 		switch (udtType.toUpperCase()) {

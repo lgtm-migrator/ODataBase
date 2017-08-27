@@ -15,14 +15,13 @@ import org.apache.olingo.server.api.ServiceMetadata;
 import org.apache.olingo.server.api.processor.EntityCollectionProcessor;
 import org.apache.olingo.server.api.processor.EntityProcessor;
 import org.fornever.api.Entry;
-import org.fornever.api.olingo.MySQLEdmProvider;
-import org.fornever.api.olingo.MySQLEntityCollectionProcessor;
-import org.fornever.api.olingo.MySQLEntityProcessor;
+import org.fornever.api.olingo.EdmProviderImpl;
+import org.fornever.api.olingo.EntityCollectionProcessorImpl;
+import org.fornever.api.olingo.EntityProcessorImpl;
 import org.fornever.api.types.SchemaMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.alibaba.druid.pool.DruidDataSource;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.name.Names;
@@ -43,15 +42,16 @@ public class GuiceBindings extends AbstractModule {
 		loadProperties();
 		Names.bindProperties(binder(), System.getProperties());
 		bind(DataSource.class).toProvider(DataSourceProvider.class).in(Scopes.SINGLETON);
-		bind(SchemaMetadata.class).in(Scopes.SINGLETON);
 		bind(OData.class).toProvider(ODataProvider.class).in(Scopes.SINGLETON);
 		bind(ODataHttpHandler.class).toProvider(ODataHttpHandlerProvider.class).in(Scopes.SINGLETON);
 		bind(ServiceMetadata.class).toProvider(ServiceMetadataProvider.class).in(Scopes.SINGLETON);
 		bind(QueryRunner.class).toProvider(QueryRunnerProvider.class).in(Scopes.SINGLETON);
 
-		bind(CsdlEdmProvider.class).to(MySQLEdmProvider.class).in(Scopes.SINGLETON);
-		bind(EntityCollectionProcessor.class).to(MySQLEntityCollectionProcessor.class).in(Scopes.SINGLETON);
-		bind(EntityProcessor.class).to(MySQLEntityProcessor.class).in(Scopes.SINGLETON);
+		bind(CsdlEdmProvider.class).to(EdmProviderImpl.class).in(Scopes.SINGLETON);
+		bind(EntityCollectionProcessor.class).to(EntityCollectionProcessorImpl.class).in(Scopes.SINGLETON);
+		bind(EntityProcessor.class).to(EntityProcessorImpl.class).in(Scopes.SINGLETON);
+		
+		bind(SchemaMetadata.class).toProvider(SchemaMetadataProvider.class).in(Scopes.SINGLETON);
 	}
 
 	/**

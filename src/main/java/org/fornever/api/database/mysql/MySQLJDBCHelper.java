@@ -1,16 +1,14 @@
-package org.fornever.api.types;
+package org.fornever.api.database.mysql;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Types;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
+
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
@@ -18,12 +16,11 @@ import org.apache.olingo.commons.api.data.Entity;
 import org.apache.olingo.commons.api.data.Property;
 import org.apache.olingo.commons.api.data.ValueType;
 import org.apache.olingo.commons.api.edm.EdmEntitySet;
-import org.apache.olingo.commons.api.edm.EdmNavigationPropertyBinding;
-import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
-import org.apache.olingo.commons.api.edm.provider.CsdlNavigationPropertyBinding;
 import org.apache.olingo.commons.api.http.HttpMethod;
 import org.fornever.api.Entry;
-import org.h2.util.New;
+import org.fornever.api.types.ColumnMetadata;
+import org.fornever.api.types.SchemaMetadata;
+import org.fornever.api.types.TableMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +32,7 @@ import ca.krasnay.sqlbuilder.InsertBuilder;
 import ca.krasnay.sqlbuilder.SelectBuilder;
 import ca.krasnay.sqlbuilder.UpdateBuilder;
 
-public class MySQLJDBCHelper implements JDBCHelper {
+public class MySQLJDBCHelper  {
 
 	@Inject
 	private SchemaMetadata schemaMatadata;
@@ -47,24 +44,7 @@ public class MySQLJDBCHelper implements JDBCHelper {
 	@Inject
 	private QueryRunner queryRunner;
 
-	private Logger logger = LoggerFactory.getLogger(MySQLJDBCHelper.class);
-
-	public Entity parseEntityFromRow(ResultSet rs, TableMetadata tableMetadata) throws SQLException {
-		Entity entity = new Entity();
-		for (ColumnMetadata columnMetadata : tableMetadata.getColumns()) {
-			String columnName = columnMetadata.getColumnName();
-			entity.addProperty(new Property(null, columnName, ValueType.PRIMITIVE, rs.getObject(columnName)));
-		}
-		if (tableMetadata.getPrimaryKey() != null) {
-			try {
-				entity.setId(new URI(String.format("%s(%s)", tableMetadata.getEntitySetName(),
-						rs.getString(tableMetadata.getPrimaryKey()))));
-			} catch (URISyntaxException e) {
-				e.printStackTrace();
-			}
-		}
-		return entity;
-	}
+	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	public Object adaptColumnValue(Property property) {
 		Object o = property.getValue();
@@ -88,6 +68,79 @@ public class MySQLJDBCHelper implements JDBCHelper {
 
 		Object insertedId = runner.insert(sql, new ScalarHandler<>());
 		return retriveEntityByKey(tableMetadata, insertedId);
+	}
+
+	public void deleteEntityData(EdmEntitySet edmEntitySet, String priKeyValue) throws SQLException {
+		TableMetadata tableMetadata = schemaMatadata.getTableByEntitySetName(edmEntitySet.getName());
+		DeleteBuilder builder = new DeleteBuilder(tableMetadata.getTableName());
+		builder.where(String.format("`%s` = '%s'", tableMetadata.getPrimaryKey(), priKeyValue));
+		Integer affected = queryRunner.execute(builder.toString());
+		if (affected < 1) {
+			throw new SQLException("No any records deleted");
+		}
+	}
+
+	public Entity parseEntityFromRow(ResultSet rs, TableMetadata tableMetadata) throws SQLException {
+		Entity entity = new Entity();
+		for (ColumnMetadata columnMetadata : tableMetadata.getColumns()) {
+			String columnName = columnMetadata.getColumnName();
+			entity.addProperty(new Property(null, columnName, ValueType.PRIMITIVE, rs.getObject(columnName)));
+		}
+		if (tableMetadata.getPrimaryKey() != null) {
+			try {
+				entity.setId(new URI(String.format("%s(%s)", tableMetadata.getEntitySetName(),
+						rs.getString(tableMetadata.getPrimaryKey()))));
+			} catch (URISyntaxException e) {
+				e.printStackTrace();
+			}
+		}
+		return entity;
+	}
+
+	public List<Entity> retriveEntities(EdmEntitySet edmEntitySet) {
+		TableMetadata tableMetadata = schemaMatadata.getTableByEntitySetName(edmEntitySet.getName());
+		List<Entity> rt = new ArrayList<>();
+		QueryRunner runner = queryRunner;
+
+		SelectBuilder builder = new SelectBuilder(tableMetadata.getTableName());
+		String sql = builder.toString();
+
+		try {
+			rt = runner.query(sql, new ResultSetHandler<List<Entity>>() {
+
+				@Override
+				public List<Entity> handle(ResultSet rs) throws SQLException {
+					List<Entity> entities = new ArrayList<>();
+					while (rs.next()) {
+						entities.add(parseEntityFromRow(rs, tableMetadata));
+					}
+					return entities;
+				}
+
+			});
+		} catch (SQLException e1) {
+			logger.error("Error happened when retrive entitiy {}, sql is: {}", tableMetadata.getTableName(), sql);
+			e1.printStackTrace();
+		}
+
+		return rt;
+	}
+
+	public Entity retriveEntityByKey(EdmEntitySet edmEntitySet, String priKeyValue) throws SQLException {
+		TableMetadata tableMetadata = schemaMatadata.getTableByEntitySetName(edmEntitySet.getName());
+		SelectBuilder builder = new SelectBuilder(tableMetadata.getTableName());
+		builder.where(String.format("`%s` = '%s'", tableMetadata.getPrimaryKey(), priKeyValue));
+		return queryRunner.query(builder.toString(), new ResultSetHandler<Entity>() {
+
+			@Override
+			public Entity handle(ResultSet rs) throws SQLException {
+				while (rs.next()) {
+					return parseEntityFromRow(rs, tableMetadata);
+				}
+				return null;
+			}
+
+		});
 	}
 
 	public Entity retriveEntityByKey(TableMetadata tableMetadata, Object primaryKeyValue) {
@@ -118,50 +171,11 @@ public class MySQLJDBCHelper implements JDBCHelper {
 		return rt;
 	}
 
-	public Entity retriveEntityByKey(EdmEntitySet edmEntitySet, String priKeyValue) throws SQLException {
-		TableMetadata tableMetadata = schemaMatadata.getTableByEntitySetName(edmEntitySet.getName());
-		SelectBuilder builder = new SelectBuilder(tableMetadata.getTableName());
-		builder.where(String.format("`%s` = '%s'", tableMetadata.getPrimaryKey(), priKeyValue));
-		return queryRunner.query(builder.toString(), new ResultSetHandler<Entity>() {
-
-			@Override
-			public Entity handle(ResultSet rs) throws SQLException {
-				while (rs.next()) {
-					return parseEntityFromRow(rs, tableMetadata);
-				}
-				return null;
-			}
-
-		});
-	}
-
-	public List<Entity> retriveEntities(EdmEntitySet edmEntitySet) {
-		TableMetadata tableMetadata = schemaMatadata.getTableByEntitySetName(edmEntitySet.getName());
-		List<Entity> rt = new ArrayList<>();
-		QueryRunner runner = queryRunner;
-
-		SelectBuilder builder = new SelectBuilder(tableMetadata.getTableName());
-		String sql = builder.toString();
-
-		try {
-			rt = runner.query(sql, new ResultSetHandler<List<Entity>>() {
-
-				@Override
-				public List<Entity> handle(ResultSet rs) throws SQLException {
-					List<Entity> entities = new ArrayList<>();
-					while (rs.next()) {
-						entities.add(parseEntityFromRow(rs, tableMetadata));
-					}
-					return entities;
-				}
-
-			});
-		} catch (SQLException e1) {
-			logger.error("Error happened when retrive entitiy {}, sql is: {}", tableMetadata.getTableName(), sql);
-			e1.printStackTrace();
-		}
-
-		return rt;
+	public List<Entity> retriveRelatedEntiteis(EdmEntitySet fkEdmEntitySet, String fkValue,
+			EdmEntitySet pkEdmEntitySet) {
+		TableMetadata fkTableMetadata = schemaMatadata.getTableByEntitySetName(fkEdmEntitySet.getName());
+		TableMetadata pkTableMetadata = schemaMatadata.getTableByEntitySetName(pkEdmEntitySet.getName());
+		return null;
 	}
 
 	public Integer updateEntityByKey(TableMetadata tableMetadata, String priKeyValue, Entity entity,
@@ -199,23 +213,6 @@ public class MySQLJDBCHelper implements JDBCHelper {
 		builder.where(String.format("`%s` = '%s'", tableMetadata.getPrimaryKey(), priKeyValue));
 		return runner.update(builder.toString());
 
-	}
-
-	public void deleteEntityData(EdmEntitySet edmEntitySet, String priKeyValue) throws SQLException {
-		TableMetadata tableMetadata = schemaMatadata.getTableByEntitySetName(edmEntitySet.getName());
-		DeleteBuilder builder = new DeleteBuilder(tableMetadata.getTableName());
-		builder.where(String.format("`%s` = '%s'", tableMetadata.getPrimaryKey(), priKeyValue));
-		Integer affected = queryRunner.execute(builder.toString());
-		if (affected < 1) {
-			throw new SQLException("No any records deleted");
-		}
-	}
-
-	public List<Entity> retriveRelatedEntiteis(EdmEntitySet fkEdmEntitySet, String fkValue,
-			EdmEntitySet pkEdmEntitySet) {
-		TableMetadata fkTableMetadata = schemaMatadata.getTableByEntitySetName(fkEdmEntitySet.getName());
-		TableMetadata pkTableMetadata = schemaMatadata.getTableByEntitySetName(pkEdmEntitySet.getName());
-		return null;
 	}
 
 }
