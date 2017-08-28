@@ -12,19 +12,11 @@ import org.slf4j.LoggerFactory;
 public class TypeConventer {
 
 	private static Logger logger = LoggerFactory.getLogger(TypeConventer.class);
-	
+
 	public static interface IMustGetRow<T> {
 		public T Get(String columnName);
 	}
 
-	public static interface IIntergerRow {
-		public Integer Get(String columnName);
-	}
-
-	public static interface IStringRow {
-		public String Get(String columnName);
-	}
-	
 	public static Function<ResultSet, IMustGetRow<String>> mustGetString = (rs) -> (columnName) -> {
 		try {
 			return rs.getString(columnName);

@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
 
-public class ServerServlet extends HttpServlet {
+public class ODataServlet extends HttpServlet {
 
 	private static final long serialVersionUID = -5439922120117724291L;
 	private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -28,12 +28,12 @@ public class ServerServlet extends HttpServlet {
 	}
 
 	@Override
-	protected void service(final HttpServletRequest req, final HttpServletResponse resp)
+	protected void service(final HttpServletRequest req, final HttpServletResponse res)
 			throws ServletException, IOException {
 		try {
-			this.handler.process(req, resp);
+			this.handler.process(req, res);
 		} catch (RuntimeException e) {
-			logger.error("Server Error occurred in ExampleServlet", e);
+			logger.error("Server Error occurred: ", e);
 			throw new ServletException(e);
 		}
 	}

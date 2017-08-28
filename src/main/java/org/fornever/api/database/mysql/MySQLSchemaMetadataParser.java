@@ -1,25 +1,20 @@
 package org.fornever.api.database.mysql;
 
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.dbutils.ResultSetHandler;
-import org.fornever.api.database.IMetadataParser;
-import org.fornever.api.types.ColumnMetadata;
+import org.fornever.api.database.AbstractMetadataParser;
 import org.fornever.api.types.ForeignKeyMetadata;
-import org.fornever.api.types.SchemaMetadata;
-import org.fornever.api.types.TableMetadata;
 import org.fornever.api.types.TypeConventer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SchemaMetadataParser extends IMetadataParser {
+public class MySQLSchemaMetadataParser extends AbstractMetadataParser {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
+	@Override
 	public List<ForeignKeyMetadata> parseForeignKey(String tableSchema, String tableName, Boolean refedForeignkey)
 			throws Exception {
 		String sql = "SELECT "

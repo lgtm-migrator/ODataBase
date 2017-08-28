@@ -23,15 +23,22 @@ public class Server {
 			@Named("api.server.addr") String addr, @Named("api.server.debug") Boolean debug) throws ServletException {
 		// base url
 		String baseUrl = "/" + serviceName + ".svc";
+
 		DeploymentInfo servletBuilder = Servlets.deployment().setClassLoader(getClass().getClassLoader())
-				.setDeploymentName("odata").setContextPath("/")
-				.addServlets(Servlets.servlet("odata", ServerServlet.class).addMapping(baseUrl + "/*"));
+				.setDeploymentName("servlets").setContextPath("/");
+
+		// odata servlet
+		servletBuilder.addServlets(Servlets.servlet("odata", ODataServlet.class).addMapping(baseUrl + "/*"));
+
+		// druid stat view servlet
 		if (debug) {
-			logger.info("debug with /druid/index.html");
+			logger.info("mount druid stat view at /druid/index.html");
 			servletBuilder.addServlets(Servlets.servlet("stat", StatViewServlet.class).addMapping("/druid/*"));
 		}
+
 		DeploymentManager manager = Servlets.defaultContainer().addDeployment(servletBuilder);
 		manager.deploy();
+
 		// start server
 		Undertow server = Undertow.builder().addHttpListener(port, addr).setHandler(manager.start()).build();
 		server.start();

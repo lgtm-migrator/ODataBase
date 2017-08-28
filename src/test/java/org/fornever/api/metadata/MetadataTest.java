@@ -6,7 +6,7 @@ import java.sql.SQLException;
 
 import javax.sql.DataSource;
 
-import org.fornever.api.config.GuiceBindings;
+import org.fornever.api.guice.GuiceBindings;
 import org.fornever.api.types.SchemaMetadata;
 import org.junit.After;
 import org.junit.Before;

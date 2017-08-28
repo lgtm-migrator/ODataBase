@@ -1,9 +1,4 @@
-package org.fornever.api.config;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+package org.fornever.api.guice;
 
 import javax.sql.DataSource;
 
@@ -14,7 +9,12 @@ import org.apache.olingo.server.api.ODataHttpHandler;
 import org.apache.olingo.server.api.ServiceMetadata;
 import org.apache.olingo.server.api.processor.EntityCollectionProcessor;
 import org.apache.olingo.server.api.processor.EntityProcessor;
-import org.fornever.api.Entry;
+import org.fornever.api.guice.providers.DataSourceProvider;
+import org.fornever.api.guice.providers.ODataHttpHandlerProvider;
+import org.fornever.api.guice.providers.ODataProvider;
+import org.fornever.api.guice.providers.QueryRunnerProvider;
+import org.fornever.api.guice.providers.SchemaMetadataProvider;
+import org.fornever.api.guice.providers.ServiceMetadataProvider;
 import org.fornever.api.olingo.EdmProviderImpl;
 import org.fornever.api.olingo.EntityCollectionProcessorImpl;
 import org.fornever.api.olingo.EntityProcessorImpl;
@@ -34,12 +34,13 @@ import com.google.inject.name.Names;
  */
 public class GuiceBindings extends AbstractModule {
 
-	private final static String PROPERTIES_FILE = "application.properties";
 	private Logger logger = LoggerFactory.getLogger(getClass());
+
+	private PropertyConfigurationHelper config = new PropertyConfigurationHelper();
 
 	@Override
 	protected void configure() {
-		loadProperties();
+		config.loadProperties();
 		Names.bindProperties(binder(), System.getProperties());
 		bind(DataSource.class).toProvider(DataSourceProvider.class).in(Scopes.SINGLETON);
 		bind(OData.class).toProvider(ODataProvider.class).in(Scopes.SINGLETON);
@@ -50,37 +51,8 @@ public class GuiceBindings extends AbstractModule {
 		bind(CsdlEdmProvider.class).to(EdmProviderImpl.class).in(Scopes.SINGLETON);
 		bind(EntityCollectionProcessor.class).to(EntityCollectionProcessorImpl.class).in(Scopes.SINGLETON);
 		bind(EntityProcessor.class).to(EntityProcessorImpl.class).in(Scopes.SINGLETON);
-		
-		bind(SchemaMetadata.class).toProvider(SchemaMetadataProvider.class).in(Scopes.SINGLETON);
-	}
 
-	/**
-	 * load configuration properties from properties file
-	 */
-	private void loadProperties() {
-		try {
-			// load application.properties from src/main/resources
-			InputStream iStream = Entry.class.getClassLoader().getResourceAsStream(PROPERTIES_FILE);
-			if (iStream == null) {
-				logger.warn("missing {} file from src", PROPERTIES_FILE);
-			} else {
-				System.getProperties().load(iStream);
-			}
-		} catch (IOException e) {
-			logger.error(e.getMessage());
-		}
-		try {
-			File file = new File(PROPERTIES_FILE);
-			if (file.exists()) {
-				// load application.properties from application path
-				InputStream iStream = new FileInputStream(PROPERTIES_FILE);
-				System.getProperties().load(iStream);
-			} else {
-				logger.info("missing user configuration file");
-			}
-		} catch (IOException e) {
-			logger.error(e.getMessage());
-		}
+		bind(SchemaMetadata.class).toProvider(SchemaMetadataProvider.class).in(Scopes.SINGLETON);
 	}
 
 }

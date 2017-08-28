@@ -1,4 +1,4 @@
-package org.fornever.api.config;
+package org.fornever.api.guice.providers;
 
 import java.sql.SQLException;
 

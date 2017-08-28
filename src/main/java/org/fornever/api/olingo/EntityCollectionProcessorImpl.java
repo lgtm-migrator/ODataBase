@@ -14,6 +14,7 @@ import org.apache.olingo.commons.api.data.Entity;
 import org.apache.olingo.commons.api.data.EntityCollection;
 import org.apache.olingo.commons.api.edm.EdmEntitySet;
 import org.apache.olingo.commons.api.edm.EdmEntityType;
+import org.apache.olingo.commons.api.edm.EdmNavigationProperty;
 import org.apache.olingo.commons.api.edm.provider.CsdlEdmProvider;
 import org.apache.olingo.commons.api.format.ContentType;
 import org.apache.olingo.commons.api.http.HttpHeader;
@@ -31,6 +32,7 @@ import org.apache.olingo.server.api.serializer.SerializerResult;
 import org.apache.olingo.server.api.uri.UriInfo;
 import org.apache.olingo.server.api.uri.UriResource;
 import org.apache.olingo.server.api.uri.UriResourceEntitySet;
+import org.apache.olingo.server.api.uri.UriResourceNavigation;
 import org.fornever.api.database.mysql.MySQLJDBCHelper;
 import org.fornever.api.types.SchemaMetadata;
 import com.google.inject.Inject;
@@ -62,8 +64,7 @@ public class EntityCollectionProcessorImpl implements EntityCollectionProcessor 
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see
-	 * org.apache.olingo.server.api.processor.Processor#init(org.apache.olingo.
+	 * @see org.apache.olingo.server.api.processor.Processor#init(org.apache.olingo.
 	 * server.api.OData, org.apache.olingo.server.api.ServiceMetadata)
 	 */
 	@Override
@@ -89,46 +90,38 @@ public class EntityCollectionProcessorImpl implements EntityCollectionProcessor 
 		Integer segmentCount = resourcePaths.size();
 
 		UriResourceEntitySet uriResourceEntitySet = (UriResourceEntitySet) resourcePaths.get(0);
+		EdmEntitySet rtEdmEntitySet = null;
 		EdmEntitySet startEdmEntitySet = uriResourceEntitySet.getEntitySet();
 		EntityCollection entitySet = new EntityCollection();
 		List<Entity> entities = entitySet.getEntities();
 
 		switch (segmentCount) {
 		case 1:
+			rtEdmEntitySet = startEdmEntitySet;
 			entities.addAll(jdbcHelper.retriveEntities(startEdmEntitySet));
 			break;
-//		case 2:
-//			UriResourceNavigation uriResourceNavigation = (UriResourceNavigation) resourcePaths.get(1);
-//			EdmBindingTarget target = startEdmEntitySet.getRelatedBindingTarget(resourcePaths.get(1).toString());
-//			EdmEntitySet secondEdmEntitySet = ((UriResourceEntitySet) resourcePaths.get(1)).getEntitySet();
-//			String key = OlingoUtil.getPrimaryKeyValue(uriResourceEntitySet.getKeyPredicates());
-//			try {
-//				Entity startEntity = jdbcHelper.retriveEntityByKey(startEdmEntitySet, key);
-//				List<Entity> relatedEntities = jdbcHelper.retriveRelatedEntiteis(startEdmEntitySet, key,
-//						secondEdmEntitySet);
-//				EdmNavigationPropertyBinding navigationBinding = null;
-//				for (EdmNavigationPropertyBinding binding : startEdmEntitySet.getNavigationPropertyBindings()) {
-//					if (binding.getTarget().equalsIgnoreCase(
-//							secondEdmEntitySet.getEntityType().getFullQualifiedName().getFullQualifiedNameAsString())) {
-//
-//					}
-//				}
-//
-//			} catch (SQLException e) {
-//				throw new ODataApplicationException("Retrive Error",
-//						HttpStatusCode.INTERNAL_SERVER_ERROR.getStatusCode(), Locale.ENGLISH);
-//			}
-//			break;
+		case 2:
+			UriResourceNavigation uriResourceNavigation = (UriResourceNavigation) resourcePaths.get(1);
+			EdmNavigationProperty navProp = uriResourceNavigation.getProperty();
+			EdmEntityType targetEntityType = navProp.getType();
+			String key = OlingoUtil.getPrimaryKeyValue(uriResourceEntitySet.getKeyPredicates());
+			rtEdmEntitySet = OlingoUtil.getNavigationTargetEntitySet(startEdmEntitySet, navProp);
+			try {
+				entities.addAll(jdbcHelper.retriveRelatedEntiries(startEdmEntitySet, targetEntityType, navProp, key));
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			break;
 		default:
 			throw new ODataApplicationException("Not supported", HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(),
 					Locale.ENGLISH);
 		}
 
 		ODataSerializer serializer = odata.createSerializer(responseFormat);
-		EdmEntityType edmEntityType = startEdmEntitySet.getEntityType();
-		ContextURL contextUrl = ContextURL.with().entitySet(startEdmEntitySet).build();
+		EdmEntityType edmEntityType = rtEdmEntitySet.getEntityType();
+		ContextURL contextUrl = ContextURL.with().entitySet(rtEdmEntitySet).build();
 
-		final String id = request.getRawBaseUri() + "/" + startEdmEntitySet.getName();
+		final String id = request.getRawBaseUri() + "/" + rtEdmEntitySet.getName();
 		EntityCollectionSerializerOptions opts = EntityCollectionSerializerOptions.with().id(id).contextURL(contextUrl)
 				.build();
 		SerializerResult serializerResult = serializer.entityCollection(serviceMetadata, edmEntityType, entitySet,

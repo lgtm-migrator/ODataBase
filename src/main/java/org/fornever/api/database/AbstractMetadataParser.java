@@ -13,9 +13,6 @@ import java.util.List;
 import javax.sql.DataSource;
 
 import org.apache.commons.dbutils.QueryRunner;
-import org.apache.commons.dbutils.ResultSetHandler;
-import org.fornever.api.database.IMetadataParser.ConnectionRunner;
-import org.fornever.api.database.IMetadataParser.DatabaseMetaDataRunner;
 import org.fornever.api.types.ColumnMetadata;
 import org.fornever.api.types.ForeignKeyMetadata;
 import org.fornever.api.types.SchemaMetadata;
@@ -30,7 +27,7 @@ import com.google.inject.Inject;
  * @author theos
  *
  */
-public abstract class IMetadataParser {
+public abstract class AbstractMetadataParser {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -52,7 +49,7 @@ public abstract class IMetadataParser {
 	 * Run with connection, auto closed after running
 	 * 
 	 * @param runner
-	 * @throws SQLException
+	 * @throws Exception
 	 */
 	protected <T> T runWithConnection(ConnectionRunner<T> runner) throws Exception {
 		Connection connection = dataSource.getConnection();
@@ -76,16 +73,44 @@ public abstract class IMetadataParser {
 		});
 	}
 
-	public List<ForeignKeyMetadata> parseTableOwnedForeignKey(String tableSchema, String tableName)
-			throws Exception {
+	/**
+	 * parseTableOwnedForeignKey
+	 * 
+	 * @param tableSchema
+	 * @param tableName
+	 * @return
+	 * @throws Exception
+	 */
+	public List<ForeignKeyMetadata> parseTableOwnedForeignKey(String tableSchema, String tableName) throws Exception {
 		return parseForeignKey(tableSchema, tableName, false);
 	}
 
+	/**
+	 * parseTableBeReferencedForeignKey
+	 * 
+	 * @param tableSchema
+	 * @param tableName
+	 * @return
+	 * @throws Exception
+	 */
 	public List<ForeignKeyMetadata> parseTableBeReferencedForeignKey(String tableSchema, String tableName)
 			throws Exception {
 		return parseForeignKey(tableSchema, tableName, true);
 	}
 
+	/**
+	 * parseForeignKey for a table
+	 * 
+	 * 
+	 * @param tableSchema
+	 *            table schema/database name, can be null
+	 * @param tableName
+	 *            table name
+	 * @param refedForeignkey
+	 *            retrieve be referenced foreign key ?
+	 * @return
+	 * @throws Exception
+	 */
 	abstract public List<ForeignKeyMetadata> parseForeignKey(String tableSchema, String tableName,
 			Boolean refedForeignkey) throws Exception;
 
@@ -93,7 +118,7 @@ public abstract class IMetadataParser {
 	 * parse current schema metadata
 	 * 
 	 * @return schema metadata instance
-	 * @throws SQLException
+	 * @throws Exception
 	 */
 	public SchemaMetadata parseSchemaMetadata() throws Exception {
 		logger.info("parsing schema metadata");
@@ -142,7 +167,7 @@ public abstract class IMetadataParser {
 	 * @param schemaName
 	 *            schema(database) name
 	 * @return
-	 * @throws SQLException
+	 * @throws Exception
 	 */
 	public List<ColumnMetadata> parseTableColumns(String schemaName, String tableName) throws Exception {
 		return runWithConnection((ConnectionRunner<List<ColumnMetadata>>) (connection) -> {
@@ -184,7 +209,7 @@ public abstract class IMetadataParser {
 	 * @param tableName
 	 *            table name
 	 * @return
-	 * @throws SQLException
+	 * @throws Exception
 	 */
 	public String parseTablePrimaryKey(String schemName, String tableName) throws Exception {
 		return runWithDatabaseMetaData((DatabaseMetaDataRunner<String>) (meta) -> {

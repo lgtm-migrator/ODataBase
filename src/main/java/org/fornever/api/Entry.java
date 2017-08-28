@@ -1,7 +1,7 @@
 package org.fornever.api;
 
 import org.apache.olingo.commons.api.edm.provider.CsdlEdmProvider;
-import org.fornever.api.config.GuiceBindings;
+import org.fornever.api.guice.GuiceBindings;
 import org.fornever.api.server.Server;
 import com.google.inject.Guice;
 import com.google.inject.Injector;

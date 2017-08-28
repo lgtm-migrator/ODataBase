@@ -1,6 +1,6 @@
-package org.fornever.api.config;
+package org.fornever.api.guice.providers;
 
-import org.fornever.api.database.mysql.SchemaMetadataParser;
+import org.fornever.api.database.mysql.MySQLSchemaMetadataParser;
 import org.fornever.api.types.SchemaMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,7 +11,7 @@ import com.google.inject.Provider;
 public class SchemaMetadataProvider implements Provider<SchemaMetadata> {
 
 	@Inject
-	SchemaMetadataParser metadataParser;
+	MySQLSchemaMetadataParser metadataParser;
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 

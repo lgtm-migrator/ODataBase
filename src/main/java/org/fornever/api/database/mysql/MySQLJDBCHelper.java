@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.GregorianCalendar;
 import java.util.List;
 
@@ -16,9 +17,12 @@ import org.apache.olingo.commons.api.data.Entity;
 import org.apache.olingo.commons.api.data.Property;
 import org.apache.olingo.commons.api.data.ValueType;
 import org.apache.olingo.commons.api.edm.EdmEntitySet;
+import org.apache.olingo.commons.api.edm.EdmEntityType;
+import org.apache.olingo.commons.api.edm.EdmNavigationProperty;
 import org.apache.olingo.commons.api.http.HttpMethod;
 import org.fornever.api.Entry;
 import org.fornever.api.types.ColumnMetadata;
+import org.fornever.api.types.ForeignKeyMetadata;
 import org.fornever.api.types.SchemaMetadata;
 import org.fornever.api.types.TableMetadata;
 import org.slf4j.Logger;
@@ -32,7 +36,7 @@ import ca.krasnay.sqlbuilder.InsertBuilder;
 import ca.krasnay.sqlbuilder.SelectBuilder;
 import ca.krasnay.sqlbuilder.UpdateBuilder;
 
-public class MySQLJDBCHelper  {
+public class MySQLJDBCHelper {
 
 	@Inject
 	private SchemaMetadata schemaMatadata;
@@ -78,6 +82,14 @@ public class MySQLJDBCHelper  {
 		if (affected < 1) {
 			throw new SQLException("No any records deleted");
 		}
+	}
+
+	public List<Entity> parseEntitiesFromResultSet(ResultSet rs, TableMetadata tableMetadata) throws Exception {
+		List<Entity> rt = new ArrayList<>();
+		while (rs.next()) {
+			rt.add(parseEntityFromRow(rs, tableMetadata));
+		}
+		return rt;
 	}
 
 	public Entity parseEntityFromRow(ResultSet rs, TableMetadata tableMetadata) throws SQLException {
@@ -171,13 +183,6 @@ public class MySQLJDBCHelper  {
 		return rt;
 	}
 
-	public List<Entity> retriveRelatedEntiteis(EdmEntitySet fkEdmEntitySet, String fkValue,
-			EdmEntitySet pkEdmEntitySet) {
-		TableMetadata fkTableMetadata = schemaMatadata.getTableByEntitySetName(fkEdmEntitySet.getName());
-		TableMetadata pkTableMetadata = schemaMatadata.getTableByEntitySetName(pkEdmEntitySet.getName());
-		return null;
-	}
-
 	public Integer updateEntityByKey(TableMetadata tableMetadata, String priKeyValue, Entity entity,
 			HttpMethod httpMethod) throws Exception {
 		UpdateBuilder builder = new UpdateBuilder(tableMetadata.getTableName());
@@ -213,6 +218,27 @@ public class MySQLJDBCHelper  {
 		builder.where(String.format("`%s` = '%s'", tableMetadata.getPrimaryKey(), priKeyValue));
 		return runner.update(builder.toString());
 
+	}
+
+	public Collection<? extends Entity> retriveRelatedEntiries(EdmEntitySet startEdmEntitySet,
+			EdmEntityType targetEntityType, EdmNavigationProperty edmNavigationProperty, String key) throws Exception {
+		TableMetadata startTable = schemaMatadata.getTableByEntitySetName(startEdmEntitySet.getName());
+		TableMetadata secondTable = schemaMatadata.getTable(targetEntityType.getName());
+		String mainTableName = startTable.getTableName();
+		String refTableName = secondTable.getTableName();
+		String fkName = edmNavigationProperty.getName();
+		ForeignKeyMetadata fk = secondTable.getForeignKeyByName(fkName);
+
+		String sql = String.format("select * from %s inner join %s on %s.%s = %s.%s where %s.%s = '%s'", refTableName,
+				mainTableName, fk.getRefTable(), fk.getRefColumn(), fk.getTable(), fk.getColumn(), fk.getRefTable(),
+				fk.getRefColumn(), key);
+		return queryRunner.query(sql, (ResultSetHandler<List<Entity>>) rs -> {
+			try {
+				return parseEntitiesFromResultSet(rs, secondTable);
+			} catch (Exception e) {
+				throw new SQLException(e);
+			}
+		});
 	}
 
 }

@@ -43,6 +43,20 @@ public class TableMetadata {
 		this.foreignKeys = new ArrayList<>();
 	}
 
+	public ForeignKeyMetadata getForeignKeyByName(String fkName) {
+		for (ForeignKeyMetadata foreignKeyMetadata : foreignKeys) {
+			if (fkName.equalsIgnoreCase(foreignKeyMetadata.getKeyName())) {
+				return foreignKeyMetadata;
+			}
+		}
+		for (ForeignKeyMetadata foreignKeyMetadata : refPkForeignKeys) {
+			if (fkName.equalsIgnoreCase(foreignKeyMetadata.getKeyName())) {
+				return foreignKeyMetadata;
+			}
+		}
+		return null;
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * 

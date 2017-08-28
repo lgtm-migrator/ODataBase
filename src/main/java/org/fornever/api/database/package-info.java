@@ -1,5 +1,5 @@
 /**
- * 
+ * Database operation related classes
  */
 /**
  * @author theos

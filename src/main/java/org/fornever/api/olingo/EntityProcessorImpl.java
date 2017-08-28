@@ -7,10 +7,16 @@ import java.util.Locale;
 
 import javax.sql.DataSource;
 
+import org.apache.olingo.commons.api.Constants;
 import org.apache.olingo.commons.api.data.ContextURL;
+import org.apache.olingo.commons.api.data.ContextURL.Suffix;
 import org.apache.olingo.commons.api.data.Entity;
+import org.apache.olingo.commons.api.data.EntityCollection;
+import org.apache.olingo.commons.api.data.Link;
 import org.apache.olingo.commons.api.edm.EdmEntitySet;
 import org.apache.olingo.commons.api.edm.EdmEntityType;
+import org.apache.olingo.commons.api.edm.EdmNavigationProperty;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.apache.olingo.commons.api.format.ContentType;
 import org.apache.olingo.commons.api.http.HttpHeader;
 import org.apache.olingo.commons.api.http.HttpMethod;
@@ -31,6 +37,9 @@ import org.apache.olingo.server.api.uri.UriInfo;
 import org.apache.olingo.server.api.uri.UriParameter;
 import org.apache.olingo.server.api.uri.UriResource;
 import org.apache.olingo.server.api.uri.UriResourceEntitySet;
+import org.apache.olingo.server.api.uri.UriResourceNavigation;
+import org.apache.olingo.server.api.uri.queryoption.ExpandItem;
+import org.apache.olingo.server.api.uri.queryoption.ExpandOption;
 import org.fornever.api.database.mysql.MySQLJDBCHelper;
 import org.fornever.api.types.SchemaMetadata;
 import org.fornever.api.types.TableMetadata;
@@ -38,10 +47,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
+import com.google.inject.name.Named;
 
 public class EntityProcessorImpl implements EntityProcessor {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
+
+	@Inject
+	@Named("odata.namespace")
+	private String nameSpace;
+
+	@Inject
+	@Named("odata.container")
+	private String containerName;
 
 	@Inject
 	private OData odata;
@@ -73,10 +91,36 @@ public class EntityProcessorImpl implements EntityProcessor {
 		if (tableMetadata != null) {
 			entity = jdbcHelper.retriveEntityByKey(tableMetadata, keyPredicates.get(0).getText());
 		}
+		
 		EdmEntityType entityType = edmEntitySet.getEntityType();
+		ExpandOption expandOption = uriInfo.getExpandOption();
+		if (expandOption != null)
+			for (ExpandItem expandItem : expandOption.getExpandItems()) {
+				UriResource uriResource = expandItem.getResourcePath().getUriResourceParts().get(0);
+				if (uriResource instanceof UriResourceNavigation) {
+					EdmNavigationProperty edmNavigationProperty = ((UriResourceNavigation) uriResource).getProperty();
+					EdmEntityType targetEntityType = edmNavigationProperty.getType();
+					String key = OlingoUtil.getPrimaryKeyValue(uriResourceEntitySet.getKeyPredicates());
+					EntityCollection collection = new EntityCollection();
+					try {
+						collection.getEntities().addAll(jdbcHelper.retriveRelatedEntiries(edmEntitySet,
+								targetEntityType, edmNavigationProperty, key));
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					Link link = new Link();
+					link.setTitle(edmNavigationProperty.getName()); // title is important
+					link.setType(Constants.ENTITY_NAVIGATION_LINK_TYPE);
+					// rel string type is important for XML parse
+					link.setRel(Constants.NS_ASSOCIATION_LINK_REL + edmNavigationProperty.getName()); 
+					link.setInlineEntitySet(collection);
+					entity.getNavigationLinks().add(link);
+				}
+			}
 
-		ContextURL contextUrl = ContextURL.with().entitySet(edmEntitySet).build();
-		EntitySerializerOptions options = EntitySerializerOptions.with().contextURL(contextUrl).build();
+		ContextURL contextUrl = ContextURL.with().entitySet(edmEntitySet).suffix(Suffix.ENTITY).build();
+		EntitySerializerOptions options = EntitySerializerOptions.with().contextURL(contextUrl).expand(expandOption)
+				.build();
 
 		ODataSerializer serializer = odata.createSerializer(responseFormat);
 		int statusCode = HttpStatusCode.OK.getStatusCode();
